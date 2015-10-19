@@ -165,7 +165,7 @@ public class CustomCrafting extends AbstractCraftBookMechanic {
 
                             if(ItemUtil.areBaseItemsIdentical(cit.getItemStack(), it)) {
                                 CraftBookPlugin.logDebugMessage("Recipe base item is correct!", "advanced-data");
-                                if(ItemUtil.areItemsIdentical(cit.getItemStack(), it)) {
+                                if(ItemUtil.areItemsIdentical(cit.getItemStack(), it, false, true)) {
                                     leftovers.remove(it);
                                     CraftBookPlugin.logDebugMessage("MetaData is correct!", "advanced-data");
                                 } else {
@@ -233,7 +233,7 @@ public class CustomCrafting extends AbstractCraftBookMechanic {
             if(ItemUtil.areBaseItemsIdentical(frec.getInput(), event.getCurrentItem())) {
 
                 RecipeManager.Recipe recipe = advancedRecipes.get(rec);
-                if(ItemUtil.areItemsIdentical(event.getCurrentItem(), recipe.getIngredients().get(0).getItemStack())) {
+                if(ItemUtil.areItemsIdentical(event.getCurrentItem(), recipe.getIngredients().get(0).getItemStack(), false, true)) {
                     shouldCancel = false;
                     break;
                 } else {
@@ -271,7 +271,7 @@ public class CustomCrafting extends AbstractCraftBookMechanic {
 
                         if(ItemUtil.areBaseItemsIdentical(cit.getItemStack(), event.getSource())) {
                             CraftBookPlugin.logDebugMessage("Base item is correct!", "advanced-data");
-                            if(ItemUtil.areItemsIdentical(cit.getItemStack(), event.getSource())) {
+                            if(ItemUtil.areItemsIdentical(cit.getItemStack(), event.getSource(), false, true)) {
                                 leftovers.remove(event.getSource());
                                 CraftBookPlugin.logDebugMessage("MetaData correct!", "advanced-data");
                             } else {

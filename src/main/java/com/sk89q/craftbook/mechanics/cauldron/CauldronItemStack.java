@@ -27,7 +27,7 @@ public class CauldronItemStack implements Comparable<CauldronItemStack> {
             Iterator<ItemStack> stackit = items.iterator();
             while(stackit.hasNext()) {
                 ItemStack cstack = stackit.next();
-                if(ItemUtil.areItemsIdentical(cstack, stack)) {
+                if(ItemUtil.areItemsIdentical(cstack, stack, false, true)) {
                     stackit.remove();
                     ItemUtil.addToStack(stack, cstack);
                     items.add(stack);
@@ -67,7 +67,7 @@ public class CauldronItemStack implements Comparable<CauldronItemStack> {
 
     public boolean isSameType(CauldronItemStack stack) {
 
-        return ItemUtil.areItemsIdentical(item, stack.item);
+        return ItemUtil.areItemsIdentical(item, stack.item, false, true);
     }
 
     @Override
