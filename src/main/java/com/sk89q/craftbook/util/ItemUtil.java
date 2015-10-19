@@ -71,7 +71,7 @@ public class ItemUtil {
     /**
      * Check whether or not an item passes filters.
      * 
-     * @param stacks The item to check if it passes.
+     * @param stack The item to check if it passes.
      * @param inclusions The list of items to include, skipped if empty.
      * @param exclusions The list of items to exclude, skipped if empty.
      * @return If the item passes the filters.
