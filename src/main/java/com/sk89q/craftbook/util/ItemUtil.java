@@ -684,7 +684,7 @@ public class ItemUtil {
     /**
      * Returns the maximum durability that an item can have.
      * 
-     * @param typeId
+     * @param type
      * @return
      */
     public static short getMaxDurability(Material type) {
