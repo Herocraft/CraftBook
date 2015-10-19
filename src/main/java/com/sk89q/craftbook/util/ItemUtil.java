@@ -27,7 +27,7 @@ public class ItemUtil {
 
     /**
      * Add an itemstack to an existing itemstack.
-     * 
+     *
      * @param base The itemstack to be added to.
      * @param toAdd The itemstack to add to the base.
      * @return The unaddable items.
@@ -49,7 +49,7 @@ public class ItemUtil {
 
     /**
      * Filter a list of items by inclusions and exclusions.
-     * 
+     *
      * @param stacks The base list of items.
      * @param inclusions The list of items to include, skipped if empty.
      * @param exclusions The list of items to exclude, skipped if empty.
@@ -70,7 +70,7 @@ public class ItemUtil {
 
     /**
      * Check whether or not an item passes filters.
-     * 
+     *
      * @param stack The item to check if it passes.
      * @param inclusions The list of items to include, skipped if empty.
      * @param exclusions The list of items to exclude, skipped if empty.
@@ -241,6 +241,10 @@ public class ItemUtil {
     }
 
     public static boolean areItemMetaIdentical(ItemMeta meta, ItemMeta meta2) {
+        return areItemMetaIdentical(meta, meta2, true, true);
+    }
+
+    public static boolean areItemMetaIdentical(ItemMeta meta, ItemMeta meta2, boolean checkLore, boolean checkEnchants) {
 
         //Display Names
         String displayName1 = null;
@@ -261,55 +265,63 @@ public class ItemUtil {
         }
         CraftBookPlugin.logDebugMessage("Display names are the same", "item-checks.meta.names");
 
-        //Lore
-        List<String> lore1 = new ArrayList<String>();
-        if(meta.hasLore())
-            for(String lore : meta.getLore())
-                lore1.add(ChatColor.translateAlternateColorCodes('&', stripResetChar(lore.trim())));
+        if(checkLore) {
+            //Lore
+            List<String> lore1 = new ArrayList<String>();
+            if (meta.hasLore())
+                for (String lore : meta.getLore())
+                    lore1.add(ChatColor.translateAlternateColorCodes('&', stripResetChar(lore.trim())));
 
-        List<String> lore2 = new ArrayList<String>();
-        if(meta2.hasLore())
-            for(String lore : meta2.getLore())
-                lore2.add(ChatColor.translateAlternateColorCodes('&', stripResetChar(lore.trim())));
+            List<String> lore2 = new ArrayList<String>();
+            if (meta2.hasLore())
+                for (String lore : meta2.getLore())
+                    lore2.add(ChatColor.translateAlternateColorCodes('&', stripResetChar(lore.trim())));
 
-        if(lore1.size() != lore2.size())
-            return false;
-        CraftBookPlugin.logDebugMessage("Has same lore lengths", "item-checks.meta.lores");
-
-        for(int i = 0; i < lore1.size(); i++) {
-            if(lore1.get(i).contains("$IGNORE") || lore2.get(i).contains("$IGNORE")) continue; //Ignore this line.
-            if(!lore1.get(i).equals(lore2.get(i)))
+            if (lore1.size() != lore2.size())
                 return false;
+            CraftBookPlugin.logDebugMessage("Has same lore lengths", "item-checks.meta.lores");
+
+            for (int i = 0; i < lore1.size(); i++) {
+                if (lore1.get(i).contains("$IGNORE") || lore2.get(i).contains("$IGNORE")) continue; //Ignore this line.
+                if (!lore1.get(i).equals(lore2.get(i)))
+                    return false;
+            }
+
+            CraftBookPlugin.logDebugMessage("Lore is the same", "item-checks.meta.lores");
         }
 
-        CraftBookPlugin.logDebugMessage("Lore is the same", "item-checks.meta.lores");
+        if(checkEnchants) {
+            //Enchants
+            List<Enchantment> ench1 = new ArrayList<Enchantment>();
+            if (meta.hasEnchants())
+                ench1.addAll(meta.getEnchants().keySet());
 
-        //Enchants
-        List<Enchantment> ench1 = new ArrayList<Enchantment>();
-        if(meta.hasEnchants())
-            ench1.addAll(meta.getEnchants().keySet());
+            List<Enchantment> ench2 = new ArrayList<Enchantment>();
+            if (meta2.hasEnchants())
+                ench2.addAll(meta2.getEnchants().keySet());
 
-        List<Enchantment> ench2 = new ArrayList<Enchantment>();
-        if(meta2.hasEnchants())
-            ench2.addAll(meta2.getEnchants().keySet());
-
-        if(ench1.size() != ench2.size())
-            return false;
-        CraftBookPlugin.logDebugMessage("Has same enchantment lengths", "item-checks.meta.enchants");
-
-        for(Enchantment ench : ench1) {
-            if(!ench2.contains(ench))
+            if (ench1.size() != ench2.size())
                 return false;
-            if(meta.getEnchantLevel(ench) != meta2.getEnchantLevel(ench))
-                return false;
+            CraftBookPlugin.logDebugMessage("Has same enchantment lengths", "item-checks.meta.enchants");
+
+            for (Enchantment ench : ench1) {
+                if (!ench2.contains(ench))
+                    return false;
+                if (meta.getEnchantLevel(ench) != meta2.getEnchantLevel(ench))
+                    return false;
+            }
+
+            CraftBookPlugin.logDebugMessage("Enchants are the same", "item-checks.meta.enchants");
         }
-
-        CraftBookPlugin.logDebugMessage("Enchants are the same", "item-checks.meta.enchants");
 
         return true;
     }
 
     public static boolean areItemsIdentical(ItemStack item, ItemStack item2) {
+        return areItemsIdentical(item, item2, true, true);
+    }
+
+    public static boolean areItemsIdentical(ItemStack item, ItemStack item2, boolean checkLore, boolean checkEnchants) {
 
         if(!isStackValid(item) || !isStackValid(item2)) {
             CraftBookPlugin.logDebugMessage("An invalid item was compared", "item-checks");
@@ -328,7 +340,7 @@ public class ItemUtil {
             CraftBookPlugin.logDebugMessage("Both share the existance of metadata", "item-checks");
             if(item.hasItemMeta()) {
                 CraftBookPlugin.logDebugMessage("Both have metadata", "item-checks.meta");
-                if(!areItemMetaIdentical(item.getItemMeta(), item2.getItemMeta())) {
+                if(!areItemMetaIdentical(item.getItemMeta(), item2.getItemMeta(), checkLore, checkEnchants)) {
                     CraftBookPlugin.logDebugMessage("Metadata is different", "item-checks.meta");
                     return false;
                 }
@@ -361,7 +373,7 @@ public class ItemUtil {
 
     /**
      * Removes a specified amount from an item entity.
-     * 
+     *
      * @param item
      * @return true if success, otherwise false.
      */
@@ -462,7 +474,7 @@ public class ItemUtil {
 
     /**
      * Checks whether the item is usable as a fuel in a furnace.
-     * 
+     *
      * @param item The item to check.
      * @return Whether it is usable in a furnace.
      */
@@ -507,7 +519,7 @@ public class ItemUtil {
 
     /**
      * Checks whether an item is a potion ingredient.
-     * 
+     *
      * @param item The item to check.
      * @return If the item is a potion ingredient.
      */
@@ -656,7 +668,7 @@ public class ItemUtil {
 
     /**
      * Gets all {@link Item}s at a certain {@link Block}.
-     * 
+     *
      * @param block The {@link Block} to check for items at.
      * @return A {@link ArrayList} of {@link Item}s.
      */
