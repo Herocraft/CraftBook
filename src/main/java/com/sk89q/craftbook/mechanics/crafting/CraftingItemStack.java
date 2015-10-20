@@ -63,7 +63,7 @@ public class CraftingItemStack implements Comparable<CraftingItemStack> {
 
     public boolean isSameType(CraftingItemStack stack) {
 
-        return ItemUtil.areItemsIdentical(item, stack.item, false, false);
+        return ItemUtil.areItemsIdentical(item, stack.item, false, false, false);
     }
 
     @Override

@@ -302,7 +302,7 @@ public class CommandItems extends AbstractCraftBookMechanic {
             final ItemStack stack = stackIt.next();
             performCommandItems(stack, event.getEntity(), event);
             for(CommandItemDefinition def : definitions) {
-                if(ItemUtil.areItemsIdentical(stack, def.getItem(), false, false) && def.keepOnDeath) {
+                if(ItemUtil.areItemsIdentical(stack, def.getItem(), false, false, false) && def.keepOnDeath) {
                     stackIt.remove();
                     Map<String, List<String>> items = (Map<String, List<String>>) CraftBookPlugin.inst().getPersistentStorage().get("command-items.death-items");
                     List<String> its = items.get(event.getEntity().getName());
@@ -356,7 +356,7 @@ public class CommandItems extends AbstractCraftBookMechanic {
 
         for(CommandItemDefinition def : definitions) {
             current: {
-            if(ItemUtil.areItemsIdentical(def.stack, item, false, false)) {
+            if(ItemUtil.areItemsIdentical(def.stack, item, false, false, false)) {
                 final CommandItemDefinition comdef = def;
 
                 if(!comdef.clickType.doesPassType(event)) break current;
@@ -385,7 +385,7 @@ public class CommandItems extends AbstractCraftBookMechanic {
                     int amount = 0;
 
                     for(ItemStack tStack : player.getInventory().getContents()) {
-                        if(ItemUtil.areItemsIdentical(stack, tStack, false, false)) {
+                        if(ItemUtil.areItemsIdentical(stack, tStack, false, false, false)) {
 
                             amount += tStack.getAmount();
 
@@ -410,7 +410,7 @@ public class CommandItems extends AbstractCraftBookMechanic {
 
                     for(int i = 0; i < player.getInventory().getContents().length; i++) {
                         ItemStack tStack = player.getInventory().getContents()[i];
-                        if(ItemUtil.areItemsIdentical(stack, tStack, false, false)) {
+                        if(ItemUtil.areItemsIdentical(stack, tStack, false, false, false)) {
                             ItemStack toRemove = tStack.clone();
                             if(toRemove.getAmount() > amount) {
 
