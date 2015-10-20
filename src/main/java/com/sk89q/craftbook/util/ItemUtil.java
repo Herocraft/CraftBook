@@ -241,23 +241,23 @@ public class ItemUtil {
     }
 
     public static boolean areItemMetaIdentical(ItemMeta meta, ItemMeta meta2) {
-        return areItemMetaIdentical(meta, meta2, true, true);
+        return areItemMetaIdentical(meta, meta2, true, true, true);
     }
 
-    public static boolean areItemMetaIdentical(ItemMeta meta, ItemMeta meta2, boolean checkLore, boolean checkEnchants) {
+    public static boolean areItemMetaIdentical(ItemMeta meta, ItemMeta meta2, boolean namelessWildcard, boolean checkLore, boolean checkEnchants) {
 
         //Display Names
         String displayName1 = null;
         if(meta.hasDisplayName())
             displayName1 = ChatColor.translateAlternateColorCodes('&', stripResetChar(meta.getDisplayName().trim()));
         else
-            displayName1 = "$IGNORE";
+            displayName1 = namelessWildcard ? "$IGNORE" : "$UNNAMED";
 
         String displayName2 = null;
         if(meta2.hasDisplayName())
             displayName2 = ChatColor.translateAlternateColorCodes('&', stripResetChar(meta2.getDisplayName().trim()));
         else
-            displayName2 = "$IGNORE";
+            displayName2 = namelessWildcard ? "$IGNORE" : "$UNNAMED";
 
         if(!displayName1.equals(displayName2)) {
             if(!displayName1.equals("$IGNORE") && !displayName2.equals("$IGNORE"))
@@ -318,10 +318,10 @@ public class ItemUtil {
     }
 
     public static boolean areItemsIdentical(ItemStack item, ItemStack item2) {
-        return areItemsIdentical(item, item2, true, true);
+        return areItemsIdentical(item, item2, true, true, true);
     }
 
-    public static boolean areItemsIdentical(ItemStack item, ItemStack item2, boolean checkLore, boolean checkEnchants) {
+    public static boolean areItemsIdentical(ItemStack item, ItemStack item2, boolean namelessWildcard, boolean checkLore, boolean checkEnchants) {
 
         if(!isStackValid(item) || !isStackValid(item2)) {
             CraftBookPlugin.logDebugMessage("An invalid item was compared", "item-checks");
@@ -340,7 +340,7 @@ public class ItemUtil {
             CraftBookPlugin.logDebugMessage("Both share the existance of metadata", "item-checks");
             if(item.hasItemMeta()) {
                 CraftBookPlugin.logDebugMessage("Both have metadata", "item-checks.meta");
-                if(!areItemMetaIdentical(item.getItemMeta(), item2.getItemMeta(), checkLore, checkEnchants)) {
+                if(!areItemMetaIdentical(item.getItemMeta(), item2.getItemMeta(), namelessWildcard, checkLore, checkEnchants)) {
                     CraftBookPlugin.logDebugMessage("Metadata is different", "item-checks.meta");
                     return false;
                 }
