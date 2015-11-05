@@ -67,7 +67,7 @@ public class PlayerSensor extends AbstractSelfTriggeredIC {
 
         invertOutput = getLine(3).contains("!");
 
-        nameLine = getLine(3).replace("g:", "").replace("p:", "").replace("n:", "").replace("t:", "").replace("a:", "").replace("!", "").trim();
+        nameLine = getLine(3).replace("g:", "").replace("p:", "").replace("n:", "").replace("t:", "").replace("a:", "").replace("v:", "").replace("e:", "").replace("!", "").trim();
 
         area = SearchArea.createArea(BukkitUtil.toSign(getSign()).getBlock(), getLine(2));
     }

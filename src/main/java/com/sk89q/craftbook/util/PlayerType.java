@@ -2,6 +2,9 @@ package com.sk89q.craftbook.util;
 
 import java.util.Locale;
 
+import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
+import com.palmergames.bukkit.towny.object.Resident;
+import com.palmergames.bukkit.towny.object.TownyUniverse;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -9,7 +12,7 @@ import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 
 public enum PlayerType {
 
-    NAME('p'), UUID('u'), CBID('i'), GROUP('g'), PERMISSION_NODE('n'), TEAM('t'), ALL('a');
+    NAME('p'), UUID('u'), CBID('i'), GROUP('g'), PERMISSION_NODE('n'), TEAM('t'), VILLAGE('v'), EMPIRE('e'), ALL('a');
 
     private PlayerType(char prefix) {
 
@@ -42,6 +45,26 @@ public enum PlayerType {
                 try {
                     return Bukkit.getScoreboardManager().getMainScoreboard().getTeam(line).hasPlayer(player);
                 } catch(Exception e) {}
+                break;
+            case VILLAGE: // Towny Town, because "t" was taken
+                if(Bukkit.getServer().getPluginManager().getPlugin("Towny") != null) {
+                    try {
+                        return TownyUniverse.getDataSource().getTown(line).getResidents().contains(TownyUniverse.getDataSource().getResident(player.getName())); // Towny gets residents by name =/
+                    }
+                    catch(NotRegisteredException ex) {
+                        // Ignore, it'll go on to the return false later anyway
+                    }
+                }
+                break;
+            case EMPIRE: // Towny Nation, because "n" was taken
+                if(Bukkit.getServer().getPluginManager().getPlugin("Towny") != null) {
+                    try {
+                        return TownyUniverse.getDataSource().getNation(line).getResidents().contains(TownyUniverse.getDataSource().getResident(player.getName())); // Towny gets residents by name =/
+                    }
+                    catch(NotRegisteredException ex) {
+                        // Ignore, it'll go on to the return false later anyway
+                    }
+                }
                 break;
             case ALL:
                 return true;

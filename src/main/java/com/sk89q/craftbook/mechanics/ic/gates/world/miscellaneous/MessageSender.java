@@ -72,7 +72,7 @@ public class MessageSender extends AbstractIC {
             else if (type == null)
                 type = PlayerType.ALL;
 
-            bit = bit.replace("g:", "").replace("p:", "").replace("n:", "").replace("t:", "").replace("a:", "").trim();
+            bit = bit.replace("g:", "").replace("p:", "").replace("n:", "").replace("t:", "").replace("v:", "").replace("e:", "").replace("a:", "").trim();
 
             if(SearchArea.isValidArea(getLocation().getBlock(), bit))
                 area = SearchArea.createArea(getLocation().getBlock(), bit);
