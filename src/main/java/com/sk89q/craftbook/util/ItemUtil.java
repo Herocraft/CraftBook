@@ -332,18 +332,36 @@ public class ItemUtil {
                 return false;
             CraftBookPlugin.logDebugMessage("The items are basically identical", "item-checks");
 
+            boolean mixedMeta = false;
             if(item.hasItemMeta() != item2.hasItemMeta()) {
-                if(item.hasItemMeta() && isValidItemMeta(item.getItemMeta())) return false;
-                else if(item2.hasItemMeta() && isValidItemMeta(item2.getItemMeta())) return false;
+                ItemMeta meta = null;
+                if(item.hasItemMeta() && isValidItemMeta(item.getItemMeta())) {
+                    mixedMeta = true;
+                    meta = item.getItemMeta();
+                }
+                else if(item2.hasItemMeta() && isValidItemMeta(item2.getItemMeta())) {
+                    mixedMeta = true;
+                    meta = item2.getItemMeta();
+                }
+
+                if(mixedMeta) {
+                    if (checkLore || checkEnchants) return false;
+                    else if(!namelessWildcard && meta.hasDisplayName()) return false;
+                }
             }
 
-            CraftBookPlugin.logDebugMessage("Both share the existance of metadata", "item-checks");
-            if(item.hasItemMeta()) {
-                CraftBookPlugin.logDebugMessage("Both have metadata", "item-checks.meta");
-                if(!areItemMetaIdentical(item.getItemMeta(), item2.getItemMeta(), namelessWildcard, checkLore, checkEnchants)) {
-                    CraftBookPlugin.logDebugMessage("Metadata is different", "item-checks.meta");
-                    return false;
+            if(!mixedMeta) {
+                CraftBookPlugin.logDebugMessage("Both share the existance of metadata", "item-checks");
+                if (item.hasItemMeta()) {
+                    CraftBookPlugin.logDebugMessage("Both have metadata", "item-checks.meta");
+                    if (!areItemMetaIdentical(item.getItemMeta(), item2.getItemMeta(), namelessWildcard, checkLore, checkEnchants)) {
+                        CraftBookPlugin.logDebugMessage("Metadata is different", "item-checks.meta");
+                        return false;
+                    }
                 }
+            }
+            else {
+                CraftBookPlugin.logDebugMessage("Only one has metadata, but flags permit continuation", "item-checks");
             }
 
             CraftBookPlugin.logDebugMessage("Items are identical", "item-checks");
