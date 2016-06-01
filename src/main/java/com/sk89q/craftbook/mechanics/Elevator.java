@@ -16,16 +16,18 @@
 
 package com.sk89q.craftbook.mechanics;
 
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.UUID;
-
-import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.OfflinePlayer;
+import com.sk89q.craftbook.AbstractCraftBookMechanic;
+import com.sk89q.craftbook.ChangedSign;
+import com.sk89q.craftbook.LocalPlayer;
+import com.sk89q.craftbook.bukkit.BukkitPlayer;
+import com.sk89q.craftbook.bukkit.CraftBookPlugin;
+import com.sk89q.craftbook.bukkit.util.BukkitUtil;
+import com.sk89q.craftbook.util.*;
+import com.sk89q.craftbook.util.events.SignClickEvent;
+import com.sk89q.craftbook.util.events.SourcedBlockRedstoneEvent;
+import com.sk89q.util.yaml.YAMLProcessor;
+import com.sk89q.worldedit.blocks.BlockType;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
@@ -37,25 +39,15 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.material.Button;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
-import com.sk89q.craftbook.AbstractCraftBookMechanic;
-import com.sk89q.craftbook.ChangedSign;
-import com.sk89q.craftbook.LocalPlayer;
-import com.sk89q.craftbook.bukkit.BukkitPlayer;
-import com.sk89q.craftbook.bukkit.CraftBookPlugin;
-import com.sk89q.craftbook.bukkit.util.BukkitUtil;
-import com.sk89q.craftbook.util.EventUtil;
-import com.sk89q.craftbook.util.LocationUtil;
-import com.sk89q.craftbook.util.ProtectionUtil;
-import com.sk89q.craftbook.util.RegexUtil;
-import com.sk89q.craftbook.util.SignUtil;
-import com.sk89q.craftbook.util.events.SignClickEvent;
-import com.sk89q.craftbook.util.events.SourcedBlockRedstoneEvent;
-import com.sk89q.util.yaml.YAMLProcessor;
-import com.sk89q.worldedit.blocks.BlockType;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Locale;
+import java.util.UUID;
 
 /**
  * The default elevator mechanism -- wall signs in a vertical column that teleport the player vertically when triggered.
@@ -65,7 +57,7 @@ import com.sk89q.worldedit.blocks.BlockType;
  */
 public class Elevator extends AbstractCraftBookMechanic {
 
-    public HashSet<UUID> flyingPlayers;
+    private HashSet<UUID> flyingPlayers;
 
     @Override
     public boolean enable() {
@@ -157,11 +149,10 @@ public class Elevator extends AbstractCraftBookMechanic {
                 break;
             default:
                 SignUtil.cancelSign(event);
-                return;
         }
     }
 
-    public static enum Direction {
+    private enum Direction {
         NONE, UP, DOWN, RECV
     }
 
@@ -227,7 +218,7 @@ public class Elevator extends AbstractCraftBookMechanic {
 
     public void onCommonClick(PlayerInteractEvent event) {
 
-        if (!EventUtil.passesFilter(event))
+        if (!EventUtil.passesFilter(event) || event.getHand() != EquipmentSlot.HAND)
             return;
 
         LocalPlayer localPlayer = CraftBookPlugin.inst().wrapPlayer(event.getPlayer());
@@ -447,7 +438,7 @@ public class Elevator extends AbstractCraftBookMechanic {
         }
     }
 
-    public void teleportFinish(LocalPlayer player, Block destination, BlockFace shift) {
+    public static void teleportFinish(LocalPlayer player, Block destination, BlockFace shift) {
         // Now, we want to read the sign so we can tell the player
         // his or her floor, but as that may not be avilable, we can
         // just print a generic message
@@ -471,7 +462,7 @@ public class Elevator extends AbstractCraftBookMechanic {
         }
     }
 
-    public boolean isValidLift(ChangedSign start, ChangedSign stop) {
+    public static boolean isValidLift(ChangedSign start, ChangedSign stop) {
 
         if (start == null || stop == null) return true;
         if (start.getLine(2).toLowerCase(Locale.ENGLISH).startsWith("to:")) {
@@ -512,12 +503,12 @@ public class Elevator extends AbstractCraftBookMechanic {
         return Direction.NONE;
     }
 
-    boolean elevatorAllowRedstone;
-    int elevatorRedstoneRadius;
-    boolean elevatorButtonEnabled;
-    boolean elevatorLoop;
-    boolean elevatorSlowMove;
-    double elevatorMoveSpeed;
+    private boolean elevatorAllowRedstone;
+    private int elevatorRedstoneRadius;
+    private boolean elevatorButtonEnabled;
+    private boolean elevatorLoop;
+    private boolean elevatorSlowMove;
+    private double elevatorMoveSpeed;
 
 
     @Override

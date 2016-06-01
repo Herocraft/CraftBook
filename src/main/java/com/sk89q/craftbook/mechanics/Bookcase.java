@@ -16,22 +16,6 @@
 
 package com.sk89q.craftbook.mechanics;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-import java.util.LinkedHashSet;
-import java.util.Set;
-
-import org.bukkit.Material;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.player.PlayerInteractEvent;
-
 import com.sk89q.craftbook.AbstractCraftBookMechanic;
 import com.sk89q.craftbook.LocalPlayer;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
@@ -39,6 +23,16 @@ import com.sk89q.craftbook.util.EventUtil;
 import com.sk89q.craftbook.util.ProtectionUtil;
 import com.sk89q.craftbook.util.TernaryState;
 import com.sk89q.util.yaml.YAMLProcessor;
+import org.bukkit.Material;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
+
+import java.io.*;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * This mechanism allow players to read bookshelves and get a random line from a file as as "book."
@@ -52,7 +46,7 @@ public class Bookcase extends AbstractCraftBookMechanic {
      *
      * @param player
      */
-    public void read(LocalPlayer player) {
+    public static void read(LocalPlayer player) {
 
         try {
             String text = getBookLine();
@@ -111,15 +105,14 @@ public class Bookcase extends AbstractCraftBookMechanic {
      *
      * @throws IOException if we have trouble with the "books.txt" configuration file.
      */
-    protected String getBookLine() throws Exception {
-
+    private static String getBookLine() throws Exception {
         return lines[CraftBookPlugin.inst().getRandom().nextInt(lines.length)];
     }
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onRightClick(PlayerInteractEvent event) {
 
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getHand() != EquipmentSlot.HAND) return;
         if (event.getClickedBlock().getType() != Material.BOOKSHELF) return;
 
         if (!bookcaseReadWhenSneaking.doesPass(event.getPlayer().isSneaking())) return;
@@ -144,8 +137,8 @@ public class Bookcase extends AbstractCraftBookMechanic {
             read(player);
     }
 
-    boolean bookcaseReadHoldingBlock;
-    TernaryState bookcaseReadWhenSneaking;
+    private boolean bookcaseReadHoldingBlock;
+    private TernaryState bookcaseReadWhenSneaking;
 
     @Override
     public void loadConfiguration (YAMLProcessor config, String path) {

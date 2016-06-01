@@ -1,5 +1,17 @@
 package com.sk89q.craftbook.util;
 
+import com.sk89q.craftbook.bukkit.CraftBookPlugin;
+import org.bukkit.ChatColor;
+import org.bukkit.Material;
+import org.bukkit.block.Block;
+import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.*;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.material.MaterialData;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -7,23 +19,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import org.bukkit.ChatColor;
-import org.bukkit.Material;
-import org.bukkit.block.Block;
-import org.bukkit.enchantments.Enchantment;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.Item;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.Recipe;
-import org.bukkit.inventory.ShapedRecipe;
-import org.bukkit.inventory.ShapelessRecipe;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.material.MaterialData;
-
-import com.sk89q.craftbook.bukkit.CraftBookPlugin;
-
-public class ItemUtil {
+public final class ItemUtil {
 
     /**
      * Add an itemstack to an existing itemstack.
@@ -108,7 +104,7 @@ public class ItemUtil {
                 return false;
         }
 
-        return passesFilters;
+        return true;
     }
 
     public static boolean areItemsSimilar(ItemStack item, Material type) {
@@ -144,6 +140,8 @@ public class ItemUtil {
 
     public static boolean areRecipesIdentical(Recipe rec1, Recipe rec2) {
 
+        if(rec1 == null || rec2 == null)
+            return rec1 == rec2;
         if(ItemUtil.areItemsIdentical(rec1.getResult(), rec2.getResult())) {
             CraftBookPlugin.logDebugMessage("Recipes have same results!", "advanced-data.compare-recipes");
             if(rec1 instanceof ShapedRecipe && rec2 instanceof ShapedRecipe) {
@@ -171,8 +169,7 @@ public class ItemUtil {
                         CraftBookPlugin.logDebugMessage("Recipes have different amounts of ingredients!", "advanced-data.compare-recipes.shaped");
                         return false;
                     }
-                    List<ItemStack> test = new ArrayList<ItemStack>();
-                    test.addAll(stacks1);
+                    List<ItemStack> test = new ArrayList<ItemStack>(stacks1);
                     if(test.size() == 0) {
                         CraftBookPlugin.logDebugMessage("Recipes are the same!", "advanced-data.compare-recipes.shaped");
                         return true;
@@ -199,8 +196,7 @@ public class ItemUtil {
 
                 CraftBookPlugin.logDebugMessage("Same Size!", "advanced-data.compare-recipes.shapeless");
 
-                List<ItemStack> test = new ArrayList<ItemStack>();
-                test.addAll(VerifyUtil.<ItemStack>withoutNulls(recipe1.getIngredientList()));
+                List<ItemStack> test = new ArrayList<ItemStack>(VerifyUtil.withoutNulls(recipe1.getIngredientList()));
                 if(test.size() == 0) {
                     CraftBookPlugin.logDebugMessage("Recipes are the same!", "advanced-data.compare-recipes.shapeless");
                     return true;
@@ -234,10 +230,8 @@ public class ItemUtil {
                 if(!lore.equals("$IGNORE"))
                     return true;
 
-        if(meta.hasEnchants())
-            return true;
+        return meta.hasEnchants();
 
-        return false;
     }
 
     public static boolean areItemMetaIdentical(ItemMeta meta, ItemMeta meta2) {
@@ -247,13 +241,13 @@ public class ItemUtil {
     public static boolean areItemMetaIdentical(ItemMeta meta, ItemMeta meta2, boolean namelessWildcard, boolean checkLore, boolean checkEnchants) {
 
         //Display Names
-        String displayName1 = null;
+        String displayName1;
         if(meta.hasDisplayName())
             displayName1 = ChatColor.translateAlternateColorCodes('&', stripResetChar(meta.getDisplayName().trim()));
         else
             displayName1 = namelessWildcard ? "$IGNORE" : "$UNNAMED";
 
-        String displayName2 = null;
+        String displayName2;
         if(meta2.hasDisplayName())
             displayName2 = ChatColor.translateAlternateColorCodes('&', stripResetChar(meta2.getDisplayName().trim()));
         else
@@ -374,13 +368,7 @@ public class ItemUtil {
         if(!isStackValid(item) || !isStackValid(item2))
             return !isStackValid(item) && !isStackValid(item2);
         else {
-
-            if(item.getType() != item2.getType())
-                return false;
-            if(item.getData().getData() != item2.getData().getData() && item.getData().getData() >= 0 && item2.getData().getData() >= 0)
-                return false;
-
-            return true;
+            return item.getType() == item2.getType() && !(item.getData().getData() != item2.getData().getData() && item.getData().getData() >= 0 && item2.getData().getData() >= 0);
         }
     }
 
@@ -441,6 +429,8 @@ public class ItemUtil {
                 return new ItemStack(Material.COOKED_MUTTON);
             case RABBIT:
                 return new ItemStack(Material.COOKED_RABBIT);
+            case CHORUS_FRUIT:
+                return new ItemStack(Material.CHORUS_FRUIT_POPPED);
             default:
                 return null;
         }
@@ -753,6 +743,17 @@ public class ItemUtil {
                 return 33;
             default:
                 return 0;
+        }
+    }
+
+    public static void damageHeldItem(Player player) {
+        ItemStack heldItem = player.getItemInHand();
+        if(heldItem != null && getMaxDurability(heldItem.getType()) > 0) {
+            heldItem.setDurability((short) (heldItem.getDurability() + 1));
+            if(heldItem.getDurability() <= getMaxDurability(heldItem.getType()))
+                player.setItemInHand(heldItem);
+            else
+                player.setItemInHand(null);
         }
     }
 }

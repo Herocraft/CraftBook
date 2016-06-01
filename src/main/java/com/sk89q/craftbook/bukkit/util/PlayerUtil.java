@@ -1,23 +1,17 @@
 package com.sk89q.craftbook.bukkit.util;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-
+import com.sk89q.craftbook.bukkit.CraftBookPlugin;
+import com.sk89q.craftbook.util.LocationUtil;
+import com.sk89q.minecraft.util.commands.CommandException;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 
-import com.sk89q.craftbook.bukkit.CraftBookPlugin;
-import com.sk89q.craftbook.util.LocationUtil;
-import com.sk89q.minecraft.util.commands.CommandException;
+import java.util.*;
 
-public class PlayerUtil {
+public final class PlayerUtil {
 
     /**
      * Checks to see if the sender is a player, otherwise throw an exception.
@@ -237,7 +231,7 @@ public class PlayerUtil {
      */
     public static Iterable<Player> matchPlayers(Player player) {
 
-        return Arrays.asList(player);
+        return Collections.singletonList(player);
     }
 
     /**

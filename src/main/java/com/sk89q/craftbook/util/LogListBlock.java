@@ -22,7 +22,7 @@ package com.sk89q.craftbook.util;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class LogListBlock {
+public final class LogListBlock {
     private LinkedHashMap <String, Object> items
     = new LinkedHashMap<String, Object>();
     private int maxKeyLength = 0;
@@ -97,8 +97,8 @@ public class LogListBlock {
         return block;
     }
 
-    private String padKey(String key, int len) {
-        return String.format("%-" + len + "s", key);
+    private static String padKey(String key, int len) {
+        return String.format("%-" + len + 's', key);
     }
 
     protected String getOutput(String prefix) {

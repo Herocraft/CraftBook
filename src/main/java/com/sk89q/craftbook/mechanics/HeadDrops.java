@@ -1,10 +1,12 @@
 package com.sk89q.craftbook.mechanics;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
-
+import com.sk89q.craftbook.AbstractCraftBookMechanic;
+import com.sk89q.craftbook.LocalPlayer;
+import com.sk89q.craftbook.bukkit.CraftBookPlugin;
+import com.sk89q.craftbook.util.EventUtil;
+import com.sk89q.craftbook.util.ItemUtil;
+import com.sk89q.craftbook.util.ProtectionUtil;
+import com.sk89q.util.yaml.YAMLProcessor;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
@@ -12,8 +14,6 @@ import org.bukkit.Material;
 import org.bukkit.block.Skull;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Player;
 import org.bukkit.entity.Skeleton;
 import org.bukkit.entity.Skeleton.SkeletonType;
 import org.bukkit.event.EventHandler;
@@ -22,17 +22,15 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 
-import com.sk89q.craftbook.AbstractCraftBookMechanic;
-import com.sk89q.craftbook.LocalPlayer;
-import com.sk89q.craftbook.bukkit.CraftBookPlugin;
-import com.sk89q.craftbook.util.EventUtil;
-import com.sk89q.craftbook.util.ItemUtil;
-import com.sk89q.craftbook.util.ProtectionUtil;
-import com.sk89q.util.yaml.YAMLProcessor;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 public class HeadDrops extends AbstractCraftBookMechanic {
 
@@ -50,7 +48,6 @@ public class HeadDrops extends AbstractCraftBookMechanic {
 
         if(!EventUtil.passesFilter(event)) return;
 
-        if(!(event.getEntity() instanceof LivingEntity)) return;
         if(playerKillsOnly && event.getEntity().getKiller() == null) return;
         if(event.getEntityType() == null) return;
 
@@ -82,7 +79,7 @@ public class HeadDrops extends AbstractCraftBookMechanic {
             case PLAYER:
                 if(!enablePlayers)
                     return;
-                String playerName = ((Player) event.getEntity()).getName();
+                String playerName = event.getEntity().getName();
                 toDrop = new ItemStack(Material.SKULL_ITEM, 1, (short)3);
                 SkullMeta meta = (SkullMeta) toDrop.getItemMeta();
                 meta.setOwner(playerName);
@@ -106,6 +103,10 @@ public class HeadDrops extends AbstractCraftBookMechanic {
                     return;
                 toDrop = new ItemStack(Material.SKULL_ITEM, 1, (short) (((Skeleton) event.getEntity()).getSkeletonType() == SkeletonType.WITHER ? 1 : 0));
                 break;
+            case ENDER_DRAGON:
+                if(!enableMobs)
+                    return;
+                toDrop = new ItemStack(Material.SKULL_ITEM, 1, (short) 5);
             default:
                 if(!enableMobs)
                     return;
@@ -137,7 +138,7 @@ public class HeadDrops extends AbstractCraftBookMechanic {
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerInteract(PlayerInteractEvent event) {
 
-        if(!EventUtil.passesFilter(event)) return;
+        if(!EventUtil.passesFilter(event) || event.getHand() != EquipmentSlot.HAND) return;
 
         if(event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
 
@@ -150,7 +151,7 @@ public class HeadDrops extends AbstractCraftBookMechanic {
             LocalPlayer player = CraftBookPlugin.inst().wrapPlayer(event.getPlayer());
 
             if(showNameClick && MobSkullType.getEntityType(skull.getOwner()) == null) {
-                player.printRaw(ChatColor.YELLOW + player.translate("mech.headdrops.click-message") + " " + skull.getOwner());
+                player.printRaw(ChatColor.YELLOW + player.translate("mech.headdrops.click-message") + ' ' + skull.getOwner());
             } else if (MobSkullType.getEntityType(skull.getOwner()) != null) {
                 skull.setOwner(MobSkullType.getFromEntityType(MobSkullType.getEntityType(skull.getOwner())).getPlayerName());
                 skull.update();
@@ -228,13 +229,15 @@ public class HeadDrops extends AbstractCraftBookMechanic {
         OCELOT("MHF_Ocelot", "scraftbrothers3"),
 
         //Unofficial/Community
-        BAT("coolwhip101", "bozzobrain"),
-        ENDER_DRAGON("KingEndermen", "KingEnderman"),
-        SILVERFISH("Xzomag", "AlexVMiner"),
-        SNOWMAN("scraftbrothers2", "Koebasti"),
+        BAT("bozzobrain", "coolwhip101"),
+        //SILVERFISH("Xzomag", "AlexVMiner"),
+        SNOWMAN("Koebasti", "scraftbrothers2"),
         HORSE("gavertoso"),
         WOLF("Budwolf"),
-        WITCH("scrafbrothers4");
+        WITCH("scrafbrothers4"),
+        RABBIT("rabbit2077"),
+        GUARDIAN("Guardian");
+        //POLAR_BEAR("_DmacK_");
 
         MobSkullType(String playerName, String ... oldNames) {
 
@@ -270,23 +273,23 @@ public class HeadDrops extends AbstractCraftBookMechanic {
                 return null;
 
             for(MobSkullType type : values())
-                if(type.getPlayerName().equalsIgnoreCase(name) || type.isOldName(name) || name.equalsIgnoreCase(instance.customSkins.get(EntityType.valueOf(type.name()).getName().toUpperCase())))
+                if(type.playerName.equalsIgnoreCase(name) || type.isOldName(name) || name.equalsIgnoreCase(instance.customSkins.get(EntityType.valueOf(type.name()).getName().toUpperCase())))
                     return EntityType.valueOf(type.name());
 
             return null;
         }
     }
 
-    boolean enableMobs;
-    boolean enablePlayers;
-    boolean playerKillsOnly;
-    boolean miningDrops;
-    boolean overrideNatural;
-    double dropRate;
-    double rateModifier;
-    boolean showNameClick;
-    HashMap<String, Double> customDropRates;
-    HashMap<String, String> customSkins;
+    private boolean enableMobs;
+    private boolean enablePlayers;
+    private boolean playerKillsOnly;
+    private boolean miningDrops;
+    private boolean overrideNatural;
+    private double dropRate;
+    private double rateModifier;
+    private boolean showNameClick;
+    private HashMap<String, Double> customDropRates;
+    private HashMap<String, String> customSkins;
 
     @Override
     public void loadConfiguration (YAMLProcessor config, String path) {

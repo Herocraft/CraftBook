@@ -1,28 +1,16 @@
 package com.sk89q.craftbook.util;
 
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.UUID;
-
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 
-public class UUIDMappings {
+import java.sql.*;
+import java.util.UUID;
 
-    Connection db;
+public final class UUIDMappings {
+
+    private Connection db;
 
     public void enable() {
-
         createConnection();
-    }
-
-    public boolean areMappingsValid() {
-
-        return db != null;
     }
 
     private void createConnection() {
@@ -33,20 +21,21 @@ public class UUIDMappings {
             DatabaseMetaData dbm = db.getMetaData();
             ResultSet tables = dbm.getTables(null, null, "mappings", null);
 
-            if(tables.next()) //We already have something in this table, don't create it!
-                return;
-            else {
+            if(!tables.next()) { //We already have something in this table, don't create it!
                 String createTable = "CREATE TABLE mappings (UUID CHAR(36) PRIMARY KEY, CBID CHAR(6) UNIQUE)";
                 try {
                     Statement state = db.createStatement();
                     state.executeUpdate(createTable);
-                } catch(SQLException e) {}
+                } catch(SQLException e) {
+                    e.printStackTrace();
+                }
             }
+        } catch(Exception e) {
+            e.printStackTrace();
         }
-        catch(Exception e) {}
-    }
+}
 
-    private void close(ResultSet results) {
+    private static void close(ResultSet results) {
 
         if(results != null) {
             try {
@@ -57,7 +46,7 @@ public class UUIDMappings {
         }
     }
 
-    private void close(PreparedStatement statement) {
+    private static void close(PreparedStatement statement) {
 
         if(statement != null) {
             try {
@@ -70,7 +59,7 @@ public class UUIDMappings {
 
     /**
      * Gets the UUID based on a CraftBook ID.
-     * 
+     *
      * @param cbID The CraftBook ID.
      * @return The UUID, if any. (Can return null)
      */
@@ -88,7 +77,7 @@ public class UUIDMappings {
             results = statement.executeQuery();
 
             if(!results.next())
-                return uuid;
+                return null;
 
             uuid = UUID.fromString(results.getString(1));
         } catch (SQLException e) {
@@ -103,7 +92,7 @@ public class UUIDMappings {
 
     /**
      * Gets the CraftBook ID based off a UUID. This will create if necessary.
-     * 
+     *
      * @param uuid The UUID.
      * @return The CB ID.
      */
@@ -168,10 +157,9 @@ public class UUIDMappings {
     }
 
     public void disable() {
-
         try {
             if(db != null && !db.isClosed())
                 db.close();
-        } catch(SQLException e){}
+        } catch(SQLException ignored){}
     }
 }

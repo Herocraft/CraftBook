@@ -1,18 +1,17 @@
 package com.sk89q.craftbook.util;
 
-import java.util.HashSet;
-import java.util.Set;
-
+import com.sk89q.craftbook.util.compat.CraftBookCompatability;
+import com.sk89q.craftbook.util.compat.NoCheatPlusCompatability;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import com.sk89q.craftbook.util.compat.CraftBookCompatability;
-import com.sk89q.craftbook.util.compat.NoCheatPlusCompatability;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Provides hooks into many other plugins that may interfere with CraftBook.
  */
-public class CompatabilityUtil {
+public final class CompatabilityUtil {
 
     private static Set<CraftBookCompatability> compatChecks = new HashSet<CraftBookCompatability>();
 

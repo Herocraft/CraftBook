@@ -16,23 +16,6 @@ package com.sk89q.craftbook.mechanics.cauldron.legacy;
  * see <http://www.gnu.org/licenses/>.
  */
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.World;
-import org.bukkit.block.Block;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.ItemStack;
-
 import com.sk89q.craftbook.AbstractCraftBookMechanic;
 import com.sk89q.craftbook.LocalPlayer;
 import com.sk89q.craftbook.bukkit.BukkitPlayer;
@@ -42,6 +25,23 @@ import com.sk89q.craftbook.util.ItemInfo;
 import com.sk89q.craftbook.util.ProtectionUtil;
 import com.sk89q.util.yaml.YAMLProcessor;
 import com.sk89q.worldedit.blocks.BlockID;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * Handler for cauldrons.
@@ -88,7 +88,7 @@ public class Cauldron extends AbstractCraftBookMechanic {
         if (!EventUtil.passesFilter(event))
             return;
 
-        if(event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        if(event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getHand() != EquipmentSlot.HAND) return;
         if(!isACauldron(event.getClickedBlock())) return;
 
         LocalPlayer localPlayer = CraftBookPlugin.inst().wrapPlayer(event.getPlayer());
@@ -116,7 +116,7 @@ public class Cauldron extends AbstractCraftBookMechanic {
      *
      * @param player
      * @param world
-     * @param pt
+     * @param block
      */
     private void performCauldron(LocalPlayer player, World world, Block block) {
 
@@ -235,12 +235,10 @@ public class Cauldron extends AbstractCraftBookMechanic {
      * case of non-wall blocks, we also make sure that there is standing lava underneath.
      *
      * @param world
-     * @param pt
+     * @param block
      * @param minY
      * @param maxY
      * @param visited
-     *
-     * @throws Cauldron.NotACauldronException
      */
     public void findCauldronContents(LocalPlayer player, World world, Block block, int minY, int maxY, Map<Location, ItemInfo> visited) {
 
@@ -294,10 +292,10 @@ public class Cauldron extends AbstractCraftBookMechanic {
     /**
      * Returns a new BlockWorldVector with i, j, and k added to pt's x, y and z.
      *
-     * @param i
-     * @param j
-     * @param k
-     * @param pt
+     * @param x
+     * @param y
+     * @param z
+     * @param block
      */
     private Block recurse(int x, int y, int z, Block block) {
 

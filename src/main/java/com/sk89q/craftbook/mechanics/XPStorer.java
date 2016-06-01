@@ -4,6 +4,7 @@ import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
 import com.sk89q.craftbook.AbstractCraftBookMechanic;
@@ -26,7 +27,7 @@ public class XPStorer extends AbstractCraftBookMechanic {
         else if(block.getType() != Material.AIR)
             if(!block.isSame(event.getClickedBlock())) return;
 
-        if (!EventUtil.passesFilter(event)) return;
+        if (!EventUtil.passesFilter(event) || event.getHand() != EquipmentSlot.HAND) return;
 
         LocalPlayer player = CraftBookPlugin.inst().wrapPlayer(event.getPlayer());
 
@@ -41,7 +42,7 @@ public class XPStorer extends AbstractCraftBookMechanic {
                 return;
             }
 
-            max = event.getPlayer().getItemInHand().getAmount();
+            max = event.getPlayer().getInventory().getItemInMainHand().getAmount();
         }
 
         if(!player.hasPermission("craftbook.mech.xpstore.use")) {
@@ -60,13 +61,17 @@ public class XPStorer extends AbstractCraftBookMechanic {
 
         float pcnt = event.getPlayer().getExp();
         int level = event.getPlayer().getLevel();
+        CraftBookPlugin.logDebugMessage("Percent: " + pcnt + ". Level: " + level, "xpstorer");
 
         event.getPlayer().setExp(0);
         xp += (int)(event.getPlayer().getExpToLevel()*pcnt);
 
+        CraftBookPlugin.logDebugMessage("XP: " + xp, "xpstorer");
+
         while (event.getPlayer().getLevel() > 0) {
             event.getPlayer().setLevel(event.getPlayer().getLevel() - 1);
             xp += event.getPlayer().getExpToLevel();
+            CraftBookPlugin.logDebugMessage("XP: " + xp + ". Level: " + event.getPlayer().getLevel(), "xpstorer");
         }
 
         event.getPlayer().setLevel(level);
@@ -79,19 +84,33 @@ public class XPStorer extends AbstractCraftBookMechanic {
 
         int bottleCount = (int) Math.min(max, Math.floor(xp / xpPerBottle));
 
-        event.getPlayer().getInventory().removeItem(new ItemStack(Material.GLASS_BOTTLE, bottleCount));
-        if(event.getClickedBlock() == null)
-            for(ItemStack leftOver : event.getPlayer().getInventory().addItem(new ItemStack(Material.EXP_BOTTLE, bottleCount)).values())
-                event.getPlayer().getWorld().dropItemNaturally(event.getPlayer().getLocation(), leftOver);
-        else
-            event.getClickedBlock().getWorld().dropItemNaturally(event.getClickedBlock().getLocation(), new ItemStack(Material.EXP_BOTTLE, bottleCount));
+        CraftBookPlugin.logDebugMessage("Bottles: " + bottleCount, "xpstorer");
+
+        if(requireBottle) {
+            event.getPlayer().getInventory().removeItem(new ItemStack(Material.GLASS_BOTTLE, bottleCount));
+        }
+
+        int tempBottles = bottleCount;
+
+        while(tempBottles > 0) {
+            ItemStack bottles = new ItemStack(Material.EXP_BOTTLE, Math.min(tempBottles, 64));
+            if (event.getClickedBlock() == null)
+                for (ItemStack leftOver : event.getPlayer().getInventory().addItem(bottles).values())
+                    event.getPlayer().getWorld().dropItemNaturally(event.getPlayer().getLocation(), leftOver);
+            else
+                event.getClickedBlock().getWorld().dropItemNaturally(event.getClickedBlock().getLocation(), bottles);
+
+            tempBottles -= 64;
+        }
 
         event.getPlayer().setLevel(0);
         event.getPlayer().setExp(0);
 
-        float levelPercentage = 0;
+        float levelPercentage;
 
         int remainingXP = xp - bottleCount*xpPerBottle;
+
+        CraftBookPlugin.logDebugMessage("Leftover XP: " + remainingXP, "xpstorer");
 
         do {
             levelPercentage = (float)remainingXP / event.getPlayer().getExpToLevel();
@@ -114,10 +133,10 @@ public class XPStorer extends AbstractCraftBookMechanic {
         event.setCancelled(true);
     }
 
-    boolean requireBottle;
-    int xpPerBottle;
-    ItemInfo block;
-    TernaryState sneakingState;
+    private boolean requireBottle;
+    private int xpPerBottle;
+    private ItemInfo block;
+    private TernaryState sneakingState;
 
     @Override
     public void loadConfiguration(YAMLProcessor config, String path) {

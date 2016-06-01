@@ -1,16 +1,14 @@
 package com.sk89q.craftbook.mechanics.items;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
+import com.sk89q.craftbook.AbstractCraftBookMechanic;
+import com.sk89q.craftbook.LocalPlayer;
+import com.sk89q.craftbook.bukkit.CraftBookPlugin;
+import com.sk89q.craftbook.bukkit.util.BukkitUtil;
+import com.sk89q.craftbook.mechanics.items.CommandItemAction.ActionRunStage;
+import com.sk89q.craftbook.mechanics.items.CommandItemDefinition.CommandType;
+import com.sk89q.craftbook.util.*;
+import com.sk89q.util.yaml.YAMLFormat;
+import com.sk89q.util.yaml.YAMLProcessor;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -28,31 +26,15 @@ import org.bukkit.event.entity.EntityEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
-import org.bukkit.event.player.PlayerDropItemEvent;
-import org.bukkit.event.player.PlayerInteractEntityEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerItemBreakEvent;
-import org.bukkit.event.player.PlayerItemConsumeEvent;
-import org.bukkit.event.player.PlayerPickupItemEvent;
-import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.*;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachment;
 
-import com.sk89q.craftbook.AbstractCraftBookMechanic;
-import com.sk89q.craftbook.LocalPlayer;
-import com.sk89q.craftbook.bukkit.CraftBookPlugin;
-import com.sk89q.craftbook.bukkit.util.BukkitUtil;
-import com.sk89q.craftbook.mechanics.items.CommandItemAction.ActionRunStage;
-import com.sk89q.craftbook.mechanics.items.CommandItemDefinition.CommandType;
-import com.sk89q.craftbook.util.EventUtil;
-import com.sk89q.craftbook.util.ItemSyntax;
-import com.sk89q.craftbook.util.ItemUtil;
-import com.sk89q.craftbook.util.LoadPriority;
-import com.sk89q.craftbook.util.ParsingUtil;
-import com.sk89q.craftbook.util.Tuple2;
-import com.sk89q.util.yaml.YAMLFormat;
-import com.sk89q.util.yaml.YAMLProcessor;
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+import java.util.Map.Entry;
 
 public class CommandItems extends AbstractCraftBookMechanic {
 
@@ -142,8 +124,10 @@ public class CommandItems extends AbstractCraftBookMechanic {
                 public void run () {
 
                     for(Player player : Bukkit.getOnlinePlayers()) {
-                        if(player.getItemInHand() != null)
-                            performCommandItems(player.getItemInHand(), player, null);
+                        if(player.getInventory().getItemInMainHand() != null)
+                            performCommandItems(player.getInventory().getItemInMainHand(), player, null);
+                        if(player.getInventory().getItemInOffHand() != null)
+                            performCommandItems(player.getInventory().getItemInOffHand(), player, null);
                         for(ItemStack stack : player.getInventory().getArmorContents())
                             if(stack != null)
                                 performCommandItems(stack, player, null);
@@ -202,7 +186,7 @@ public class CommandItems extends AbstractCraftBookMechanic {
     @EventHandler(priority=EventPriority.HIGH)
     public void onEntityDamageEntity(final EntityDamageByEntityEvent event) {
 
-        Player p = null;
+        Player p;
         if(event.getDamager() instanceof Projectile) {
             if(!(((Projectile) event.getDamager()).getShooter() instanceof Player))
                 return;
@@ -248,10 +232,10 @@ public class CommandItems extends AbstractCraftBookMechanic {
     @EventHandler(priority=EventPriority.HIGH)
     public void onBlockPlace(final BlockPlaceEvent event) {
 
-        if(event.getPlayer().getItemInHand() == null)
+        if(event.getItemInHand() == null)
             return;
 
-        performCommandItems(event.getPlayer().getItemInHand(), event.getPlayer(), event);
+        performCommandItems(event.getItemInHand(), event.getPlayer(), event);
     }
 
     @EventHandler(priority=EventPriority.HIGH)
@@ -310,6 +294,7 @@ public class CommandItems extends AbstractCraftBookMechanic {
                     its.add(ItemSyntax.getStringFromItem(stack));
                     items.put(event.getEntity().getName(), its);
                     CraftBookPlugin.inst().getPersistentStorage().set("command-items.death-items", items);
+                    break;
                 }
             }
         }
@@ -435,10 +420,19 @@ public class CommandItems extends AbstractCraftBookMechanic {
                 }
 
                 if(def.consumeSelf) {
-                    if(player.getItemInHand().getAmount() > 1)
-                        player.getItemInHand().setAmount(player.getItemInHand().getAmount() - 1);
-                    else
-                        player.setItemInHand(null);
+
+                    if(event instanceof PlayerInteractEvent && ((PlayerInteractEvent) event).getHand() == EquipmentSlot.OFF_HAND
+                            || event instanceof BlockPlaceEvent && ((BlockPlaceEvent) event).getHand() == EquipmentSlot.OFF_HAND) {
+                        if (player.getInventory().getItemInOffHand().getAmount() > 1)
+                            player.getInventory().getItemInOffHand().setAmount(player.getInventory().getItemInOffHand().getAmount() - 1);
+                        else
+                            player.getInventory().setItemInOffHand(null);
+                    } else {
+                        if (player.getInventory().getItemInMainHand().getAmount() > 1)
+                            player.getInventory().getItemInMainHand().setAmount(player.getInventory().getItemInMainHand().getAmount() - 1);
+                        else
+                            player.getInventory().setItemInMainHand(null);
+                    }
                 }
 
                 player.updateInventory();
@@ -472,7 +466,7 @@ public class CommandItems extends AbstractCraftBookMechanic {
         }
     }
 
-    public void doCommand(String command, Event event, CommandItemDefinition comdef, Player player) {
+    public static void doCommand(String command, Event event, CommandItemDefinition comdef, Player player) {
 
         if(command == null || command.trim().isEmpty())
             return;
@@ -496,7 +490,7 @@ public class CommandItems extends AbstractCraftBookMechanic {
         }
     }
 
-    public String parseLine(String command, Event event, Player player) {
+    public static String parseLine(String command, Event event, Player player) {
 
         if(command == null) return null;
 

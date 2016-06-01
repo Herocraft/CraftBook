@@ -30,6 +30,7 @@ import com.sk89q.craftbook.util.EventUtil;
 import com.sk89q.craftbook.util.ItemInfo;
 import com.sk89q.craftbook.util.ProtectionUtil;
 import com.sk89q.util.yaml.YAMLProcessor;
+import org.bukkit.inventory.EquipmentSlot;
 
 /**
  * This allows users to Right-click to check the light level.
@@ -42,7 +43,7 @@ public class LightStone extends AbstractCraftBookMechanic {
         if (!EventUtil.passesFilter(event))
             return;
 
-        if(event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        if(event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getHand() != EquipmentSlot.HAND) return;
         LocalPlayer player = CraftBookPlugin.inst().wrapPlayer(event.getPlayer());
 
         if(!item.equals(player.getHeldItemInfo())) return;
@@ -62,7 +63,7 @@ public class LightStone extends AbstractCraftBookMechanic {
         player.printRaw(ChatColor.YELLOW + player.translate("mech.lightstone.lightstone") + " [" + getLightLine(block.getLightLevel()) + ChatColor.YELLOW + "] " + block.getLightLevel() + " L");
     }
 
-    private String getLightLine(int data) {
+    private static String getLightLine(int data) {
 
         StringBuilder line = new StringBuilder(25);
         if (data >= 9)
@@ -70,10 +71,10 @@ public class LightStone extends AbstractCraftBookMechanic {
         else
             line.append(ChatColor.DARK_RED);
         for (int i = 0; i < data; i++)
-            line.append("|");
+            line.append('|');
         line.append(ChatColor.BLACK);
         for (int i = data; i < 15; i++)
-            line.append("|");
+            line.append('|');
         return line.toString();
     }
 

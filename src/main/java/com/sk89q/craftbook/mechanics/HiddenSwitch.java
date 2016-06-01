@@ -10,6 +10,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
 import com.sk89q.craftbook.AbstractCraftBookMechanic;
@@ -119,7 +120,7 @@ public class HiddenSwitch extends AbstractCraftBookMechanic {
         if (!EventUtil.passesFilter(event))
             return;
 
-        if(event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        if(event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getHand() != EquipmentSlot.HAND) return;
 
         if (!(event.getBlockFace() == BlockFace.EAST || event.getBlockFace() == BlockFace.WEST
                 || event.getBlockFace() == BlockFace.NORTH || event.getBlockFace() == BlockFace.SOUTH
@@ -141,7 +142,7 @@ public class HiddenSwitch extends AbstractCraftBookMechanic {
             event.setCancelled(true);
     }
 
-    private void toggleSwitches(Block sign, BlockFace direction) {
+    private static void toggleSwitches(Block sign, BlockFace direction) {
 
         BlockFace[] checkFaces = new BlockFace[4];
         checkFaces[0] = BlockFace.UP;
@@ -173,12 +174,12 @@ public class HiddenSwitch extends AbstractCraftBookMechanic {
                         checkBlock.setData((byte) (checkBlock.getData() & ~0x8));
                     }
                 };
-                Bukkit.getScheduler().runTaskLater(CraftBookPlugin.inst(), turnOff, 1 * 20L);
+                Bukkit.getScheduler().runTaskLater(CraftBookPlugin.inst(), turnOff, 20L);
             }
         }
     }
 
-    boolean anyside;
+    private boolean anyside;
 
     @Override
     public void loadConfiguration (YAMLProcessor config, String path) {

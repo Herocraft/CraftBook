@@ -1,13 +1,13 @@
 package com.sk89q.craftbook.mechanics.drops;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.bukkit.inventory.ItemStack;
-
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.mechanics.drops.rewards.DropReward;
 import com.sk89q.craftbook.util.ItemUtil;
+import com.sk89q.craftbook.util.TernaryState;
+import org.bukkit.inventory.ItemStack;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class CustomDropDefinition {
 
@@ -16,12 +16,14 @@ public abstract class CustomDropDefinition {
     private String name;
 
     private boolean append;
+    private TernaryState silkTouch;
 
-    public CustomDropDefinition(String name, List<DropItemStack> drops, List<DropReward> extraRewards) {
+    public CustomDropDefinition(String name, List<DropItemStack> drops, List<DropReward> extraRewards, TernaryState silkTouch) {
         this.drops = drops.toArray(new DropItemStack[drops.size()]);
         if(extraRewards != null)
             this.extraRewards = extraRewards.toArray(new DropReward[extraRewards.size()]);
         this.name = name;
+        this.silkTouch = silkTouch;
     }
 
     public void setAppend(boolean append) {
@@ -52,7 +54,7 @@ public abstract class CustomDropDefinition {
             if(drop.getChance() < CraftBookPlugin.inst().getRandom().nextInt(100)) continue;
             ItemStack stack = drop.getStack().clone();
             if(drop.getMaximum() >= 0 && drop.getMinimum() >= 0) {
-                int amount = drop.getMinimum() + (int)(CraftBookPlugin.inst().getRandom().nextDouble() * (drop.getMaximum() - drop.getMinimum() + 1));
+                int amount = drop.getMinimum() + CraftBookPlugin.inst().getRandom().nextInt(drop.getMaximum() - drop.getMinimum() + 1);
                 if(amount <= 0) continue; //Invalid stack.
                 stack.setAmount(amount);
             }
@@ -62,6 +64,10 @@ public abstract class CustomDropDefinition {
         }
 
         return ndrops.toArray(new ItemStack[ndrops.size()]);
+    }
+
+    public TernaryState getSilkTouch() {
+        return this.silkTouch;
     }
 
     public String getName() {
