@@ -58,7 +58,7 @@ public class ExitRemover extends AbstractCraftBookMechanic {
         }
     }
 
-    boolean giveItem;
+    public boolean giveItem; // Tests fail with this not having a visibility set.
 
     @Override
     public void loadConfiguration (YAMLProcessor config, String path) {
