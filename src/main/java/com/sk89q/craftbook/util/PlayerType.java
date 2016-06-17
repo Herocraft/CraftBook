@@ -47,23 +47,19 @@ public enum PlayerType {
                 } catch(Exception e) {}
                 break;
             case VILLAGE: // Towny Town, because "t" was taken
-                if(Bukkit.getServer().getPluginManager().getPlugin("Towny") != null) {
-                    try {
-                        return TownyUniverse.getDataSource().getTown(line).getResidents().contains(TownyUniverse.getDataSource().getResident(player.getName())); // Towny gets residents by name =/
-                    }
-                    catch(NotRegisteredException ex) {
-                        // Ignore, it'll go on to the return false later anyway
-                    }
+                try {
+                    return TownyUniverse.getDataSource().getTown(line).getResidents().contains(TownyUniverse.getDataSource().getResident(player.getName())); // Towny gets residents by name =/
+                }
+                catch(NotRegisteredException ex) {
+                    // Ignore, it'll go on to the return false later anyway
                 }
                 break;
             case EMPIRE: // Towny Nation, because "n" was taken
-                if(Bukkit.getServer().getPluginManager().getPlugin("Towny") != null) {
-                    try {
-                        return TownyUniverse.getDataSource().getNation(line).getResidents().contains(TownyUniverse.getDataSource().getResident(player.getName())); // Towny gets residents by name =/
-                    }
-                    catch(NotRegisteredException ex) {
-                        // Ignore, it'll go on to the return false later anyway
-                    }
+                try {
+                    return TownyUniverse.getDataSource().getNation(line).getResidents().contains(TownyUniverse.getDataSource().getResident(player.getName())); // Towny gets residents by name =/
+                }
+                catch(NotRegisteredException ex) {
+                    // Ignore, it'll go on to the return false later anyway
                 }
                 break;
             case ALL:
