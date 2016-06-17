@@ -2,4 +2,4 @@ name: CraftBook
 main: com.sk89q.craftbook.bukkit.CraftBookPlugin
 version: "${project.version}"
 dev-url: http://dev.bukkit.org/server-mods/craftbook/
-softdepend: [WorldEdit, WorldGuard, ProtocolLib, Vault, Towny]
+softdepend: [WorldEdit, WorldGuard, ProtocolLib, Vault, Townships]

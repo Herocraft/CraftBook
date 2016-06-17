@@ -110,11 +110,10 @@
             <version>static</version>
         </dependency>
         <dependency>
-            <groupId>com.palmergames.bukkit.towny</groupId>
-            <artifactId>Towny</artifactId>
-            <version>0.89.2.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/libs/Towny.jar</systemPath>
+            <groupId>com.herocraftonline</groupId>
+            <artifactId>townships</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
     <distributionManagement>

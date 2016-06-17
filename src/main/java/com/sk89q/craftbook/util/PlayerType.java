@@ -2,9 +2,9 @@ package com.sk89q.craftbook.util;
 
 import java.util.Locale;
 
-import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
-import com.palmergames.bukkit.towny.object.Resident;
-import com.palmergames.bukkit.towny.object.TownyUniverse;
+import com.herocraftonline.townships.Townships;
+import com.herocraftonline.townships.users.TownshipsUser;
+import com.herocraftonline.townships.users.UserManager;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -12,7 +12,7 @@ import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 
 public enum PlayerType {
 
-    NAME('p'), UUID('u'), CBID('i'), GROUP('g'), PERMISSION_NODE('n'), TEAM('t'), VILLAGE('v'), EMPIRE('e'), ALL('a');
+    NAME('p'), UUID('u'), CBID('i'), GROUP('g'), PERMISSION_NODE('n'), TEAM('t'), VILLAGE('v'), KINGDOM('k'), ALL('a');
 
     private PlayerType(char prefix) {
 
@@ -46,20 +46,18 @@ public enum PlayerType {
                     return Bukkit.getScoreboardManager().getMainScoreboard().getTeam(line).hasPlayer(player);
                 } catch(Exception e) {}
                 break;
-            case VILLAGE: // Towny Town, because "t" was taken
-                try {
-                    return TownyUniverse.getDataSource().getTown(line).getResidents().contains(TownyUniverse.getDataSource().getResident(player.getName())); // Towny gets residents by name =/
-                }
-                catch(NotRegisteredException ex) {
-                    // Ignore, it'll go on to the return false later anyway
+            case VILLAGE: // Townships Town, because "t" was taken
+                if (Townships.townManager.hasTown(line)) {
+                    return UserManager.fromOfflinePlayer(player).getTown().equals(Townships.townManager.getTown(line));
                 }
                 break;
-            case EMPIRE: // Towny Nation, because "n" was taken
-                try {
-                    return TownyUniverse.getDataSource().getNation(line).getResidents().contains(TownyUniverse.getDataSource().getResident(player.getName())); // Towny gets residents by name =/
-                }
-                catch(NotRegisteredException ex) {
-                    // Ignore, it'll go on to the return false later anyway
+            case KINGDOM: // Townships Kingdom
+                if (Townships.kingdomManager.hasKingdom(line)) {
+                    TownshipsUser user = UserManager.fromOfflinePlayer(player);
+
+                    if (user.hasTown() && user.getTown().hasKingdom()) { // We have to go through Town to get Kingdom
+                        return user.getTown().getKingdom().equals(Townships.kingdomManager.getKingdom(line));
+                    }
                 }
                 break;
             case ALL:

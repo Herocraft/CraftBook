@@ -59,7 +59,7 @@ public class PlayerTrap extends AbstractSelfTriggeredIC {
         else
             type = PlayerType.ALL;
 
-        nameLine = getLine(3).replace("g:", "").replace("p:", "").replace("n:", "").replace("t:", "").replace("v:", "").replace("e:", "").replace("a:", "").trim();
+        nameLine = getLine(3).replace("g:", "").replace("p:", "").replace("n:", "").replace("t:", "").replace("v:", "").replace("k:", "").replace("a:", "").trim();
     }
 
     @Override
