@@ -48,7 +48,7 @@ public class LightSwitch extends AbstractCraftBookMechanic {
     @Override
     public boolean enable() {
 
-        recentLightToggles = new HistoryHashMap<Location, Long>(20);
+        recentLightToggles = new HistoryHashMap<>(20);
         return true;
     }
 
@@ -150,15 +150,17 @@ public class LightSwitch extends AbstractCraftBookMechanic {
             for (int x = -radius + wx; x <= radius + wx; x++) {
                 for (int y = -radius + wy; y <= radius + wy; y++) {
                     for (int z = -radius + wz; z <= radius + wz; z++) {
-                        Material id = block.getWorld().getBlockAt(x, y, z).getType();
+                        Block relBlock = block.getWorld().getBlockAt(x, y, z);
+                        Material id = relBlock.getType();
+                        byte data = relBlock.getData();
                         if (id == Material.TORCH || id == Material.REDSTONE_TORCH_OFF || id == Material.REDSTONE_TORCH_ON) {
                             // Limit the maximum number of changed lights
                             if (changed >= maximum) return true;
 
                             if (on) {
-                                block.getWorld().getBlockAt(x, y, z).setType(Material.TORCH);
+                                relBlock.setTypeIdAndData(Material.TORCH.getId(), data, false);
                             } else {
-                                block.getWorld().getBlockAt(x, y, z).setType(Material.REDSTONE_TORCH_ON);
+                                relBlock.setTypeIdAndData(Material.REDSTONE_TORCH_ON.getId(), data, false);
                             }
                             changed++;
                         }

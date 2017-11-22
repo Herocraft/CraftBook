@@ -19,6 +19,7 @@
 */target
 # vim
 .*.sw[a-p]
+dependency-reduced-pom.xml
 
 # various other potential build files
 /build
@@ -52,3 +53,4 @@ debug.txt
 /ICList.txt
 /config.yml
 /en_US.yml
+run/

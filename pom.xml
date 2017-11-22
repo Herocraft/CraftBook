@@ -29,39 +29,41 @@
             <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
         </repository>
         <repository>
+            <id>bukkit-repo</id>
+            <url>http://repo.bukkit.org/content/groups/public/</url>
+        </repository>
+        <repository>
             <id>Apache</id>
             <url>http://repo.maven.apache.org/maven2</url>
         </repository>
         <repository>
             <id>sk89q-mvn2</id>
-            <url>http://mvn2.sk89q.com/repo</url>
+            <url>http://maven.sk89q.com/repo</url>
         </repository>
         <repository>
-            <id>comphenix-rep</id>
-            <name>Comphenix Repository</name>
-            <url>http://repo.comphenix.net/content/groups/public</url>
+            <id>dmulloy2-repo</id>
+            <name>dmulloy2 Repository</name>
+            <url>http://repo.dmulloy2.net/content/groups/public/</url>
         </repository>
         <repository>
             <id>md_5-rep</id>
             <url>http://repo.md-5.net/content/repositories/releases</url>
         </repository>
         <repository>
-            <id>vault repo</id>
-            <url>http://nexus.theyeticave.net/content/repositories/pub_releases</url>
+            <id>gravity-repo</id>
+            <url>http://repo.gravitydevelopment.net/</url>
         </repository>
         <repository>
-            <id>spigot-repo</id>
-            <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
+            <id>vault-repo</id>
+            <url>http://nexus.hc.to/content/repositories/pub_releases</url>
         </repository>
     </repositories>
     <dependencies>
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
-            <version>1.9-R0.1-SNAPSHOT</version>
-            <scope>provided</scope>
+            <version>1.12.1-R0.1-SNAPSHOT</version>
         </dependency>
-
         <dependency>
             <groupId>com.sk89q</groupId>
             <artifactId>worldedit</artifactId>
@@ -82,13 +84,13 @@
         </dependency>
         <dependency>
             <groupId>net.milkbowl.vault</groupId>
-            <artifactId>Vault</artifactId>
-            <version>1.4.1</version>
+            <artifactId>VaultAPI</artifactId>
+            <version>1.6</version>
         </dependency>
         <dependency>
             <groupId>com.comphenix.protocol</groupId>
-            <artifactId>ProtocolLib</artifactId>
-            <version>3.3.0-SNAPSHOT</version>
+            <artifactId>ProtocolLib-API</artifactId>
+            <version>4.4.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.powermock</groupId>
@@ -106,8 +108,8 @@
         </dependency>
         <dependency>
             <groupId>fr.neatmonster</groupId>
-            <artifactId>ncpcore</artifactId>
-            <version>static</version>
+            <artifactId>nocheatplus</artifactId>
+            <version>3.15.1-RC</version>
         </dependency>
         <dependency>
             <groupId>com.herocraftonline</groupId>
@@ -183,15 +185,15 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.5.1</version>
                 <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
                 </configuration>
             </plugin>
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>2.6</version>
+                <version>3.0.2</version>
                 <configuration>
                     <archive>
                         <addMavenDescriptor>true</addMavenDescriptor>
@@ -252,17 +254,6 @@
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-release-plugin</artifactId>
-                <version>2.5.3</version>
-                <configuration>
-                    <preparationGoals>assembly:assembly</preparationGoals>
-                    <goals>assembly:assembly</goals>
-                    <tagNameFormat>@{project.version}</tagNameFormat>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.19.1</version>
                 <configuration>
@@ -272,6 +263,25 @@
                 </configuration>
             </plugin>
 
+            <plugin>
+                <groupId>com.lukegb.mojo</groupId>
+                <artifactId>gitdescribe-maven-plugin</artifactId>
+                <version>3.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>gitdescribe</goal>
+                        </goals>
+                        <id>git-describe</id>
+                        <phase>initialize</phase>
+                        <configuration>
+                            <extraArguments>
+                                <param>--exact-match</param>
+                            </extraArguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>

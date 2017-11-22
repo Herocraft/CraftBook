@@ -53,7 +53,7 @@ public class CookingPot extends AbstractCraftBookMechanic {
         CraftBookPlugin.inst().getSelfTriggerManager().registerSelfTrigger(event.getBlock().getLocation());
     }
 
-    private HashSet<String> cookingSet = new HashSet<String>();
+    private HashSet<String> cookingSet = new HashSet<>();
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onPing(SelfTriggerPingEvent event) {
@@ -157,7 +157,7 @@ public class CookingPot extends AbstractCraftBookMechanic {
                             ItemStack toRemove = i.clone();
                             toRemove.setAmount(1);
                             inventory.removeItem(toRemove);
-                            chest.update();
+                            // chest.update(); Oii 
                             lastTick -= 50;
                             break;
                         }

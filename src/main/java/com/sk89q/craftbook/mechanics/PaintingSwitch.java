@@ -28,8 +28,8 @@ import java.util.UUID;
  */
 public class PaintingSwitch extends AbstractCraftBookMechanic {
 
-    private Map<Painting, UUID> paintings = new HashMap<Painting, UUID>();
-    private Map<UUID, Painting> players = new HashMap<UUID, Painting>();
+    private Map<Painting, UUID> paintings = new HashMap<>();
+    private Map<UUID, Painting> players = new HashMap<>();
 
     public boolean isBeingEdited(Painting paint) {
 
@@ -86,10 +86,10 @@ public class PaintingSwitch extends AbstractCraftBookMechanic {
 
         LocalPlayer player = CraftBookPlugin.inst().wrapPlayer(event.getPlayer());
 
-        if (!player.hasPermission("craftbook.mech.paintingswitch.use")) return;
-
         if (players.get(player.getUniqueId()) == null)
             return;
+
+        if (!player.hasPermission("craftbook.mech.paintingswitch.use")) return;
 
         boolean isForwards;
         if (event.getNewSlot() > event.getPreviousSlot()) {

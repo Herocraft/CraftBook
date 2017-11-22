@@ -10,7 +10,36 @@ import com.sk89q.craftbook.bukkit.util.BukkitUtil;
 import com.sk89q.craftbook.core.LanguageManager;
 import com.sk89q.craftbook.core.st.MechanicClock;
 import com.sk89q.craftbook.core.st.SelfTriggeringManager;
-import com.sk89q.craftbook.mechanics.*;
+import com.sk89q.craftbook.mechanics.AIMechanic;
+import com.sk89q.craftbook.mechanics.Ammeter;
+import com.sk89q.craftbook.mechanics.BetterLeads;
+import com.sk89q.craftbook.mechanics.BetterPhysics;
+import com.sk89q.craftbook.mechanics.BetterPistons;
+import com.sk89q.craftbook.mechanics.BetterPlants;
+import com.sk89q.craftbook.mechanics.Bookcase;
+import com.sk89q.craftbook.mechanics.BounceBlocks;
+import com.sk89q.craftbook.mechanics.Chair;
+import com.sk89q.craftbook.mechanics.ChunkAnchor;
+import com.sk89q.craftbook.mechanics.CommandSigns;
+import com.sk89q.craftbook.mechanics.CookingPot;
+import com.sk89q.craftbook.mechanics.Elevator;
+import com.sk89q.craftbook.mechanics.Footprints;
+import com.sk89q.craftbook.mechanics.GlowStone;
+import com.sk89q.craftbook.mechanics.HiddenSwitch;
+import com.sk89q.craftbook.mechanics.JackOLantern;
+import com.sk89q.craftbook.mechanics.LightStone;
+import com.sk89q.craftbook.mechanics.LightSwitch;
+import com.sk89q.craftbook.mechanics.MapChanger;
+import com.sk89q.craftbook.mechanics.Marquee;
+import com.sk89q.craftbook.mechanics.Netherrack;
+import com.sk89q.craftbook.mechanics.PaintingSwitch;
+import com.sk89q.craftbook.mechanics.Payment;
+import com.sk89q.craftbook.mechanics.RedstoneJukebox;
+import com.sk89q.craftbook.mechanics.Snow;
+import com.sk89q.craftbook.mechanics.Sponge;
+import com.sk89q.craftbook.mechanics.Teleporter;
+import com.sk89q.craftbook.mechanics.TreeLopper;
+import com.sk89q.craftbook.mechanics.XPStorer;
 import com.sk89q.craftbook.mechanics.area.Area;
 import com.sk89q.craftbook.mechanics.area.simple.Bridge;
 import com.sk89q.craftbook.mechanics.area.simple.Door;
@@ -25,22 +54,61 @@ import com.sk89q.craftbook.mechanics.crafting.CustomCrafting;
 import com.sk89q.craftbook.mechanics.dispenser.DispenserRecipes;
 import com.sk89q.craftbook.mechanics.drops.CustomDrops;
 import com.sk89q.craftbook.mechanics.drops.legacy.LegacyCustomDrops;
+import com.sk89q.craftbook.mechanics.headdrops.HeadDrops;
 import com.sk89q.craftbook.mechanics.ic.ICMechanic;
 import com.sk89q.craftbook.mechanics.items.CommandItemDefinition;
 import com.sk89q.craftbook.mechanics.items.CommandItems;
-import com.sk89q.craftbook.mechanics.minecart.*;
-import com.sk89q.craftbook.mechanics.minecart.blocks.*;
+import com.sk89q.craftbook.mechanics.minecart.CollisionEntry;
+import com.sk89q.craftbook.mechanics.minecart.ConstantSpeed;
+import com.sk89q.craftbook.mechanics.minecart.EmptyDecay;
+import com.sk89q.craftbook.mechanics.minecart.EmptySlowdown;
+import com.sk89q.craftbook.mechanics.minecart.FallModifier;
+import com.sk89q.craftbook.mechanics.minecart.ItemPickup;
+import com.sk89q.craftbook.mechanics.minecart.MobBlocker;
+import com.sk89q.craftbook.mechanics.minecart.MoreRails;
+import com.sk89q.craftbook.mechanics.minecart.NoCollide;
+import com.sk89q.craftbook.mechanics.minecart.PlaceAnywhere;
+import com.sk89q.craftbook.mechanics.minecart.RailPlacer;
+import com.sk89q.craftbook.mechanics.minecart.TemporaryCart;
+import com.sk89q.craftbook.mechanics.minecart.VisionSteering;
+import com.sk89q.craftbook.mechanics.minecart.blocks.CartBlockMechanism;
+import com.sk89q.craftbook.mechanics.minecart.blocks.CartBooster;
+import com.sk89q.craftbook.mechanics.minecart.blocks.CartDeposit;
+import com.sk89q.craftbook.mechanics.minecart.blocks.CartDispenser;
+import com.sk89q.craftbook.mechanics.minecart.blocks.CartEjector;
+import com.sk89q.craftbook.mechanics.minecart.blocks.CartLift;
+import com.sk89q.craftbook.mechanics.minecart.blocks.CartMaxSpeed;
+import com.sk89q.craftbook.mechanics.minecart.blocks.CartMessenger;
+import com.sk89q.craftbook.mechanics.minecart.blocks.CartReverser;
+import com.sk89q.craftbook.mechanics.minecart.blocks.CartSorter;
+import com.sk89q.craftbook.mechanics.minecart.blocks.CartStation;
+import com.sk89q.craftbook.mechanics.minecart.blocks.CartTeleporter;
 import com.sk89q.craftbook.mechanics.pipe.Pipes;
 import com.sk89q.craftbook.mechanics.signcopier.SignCopier;
 import com.sk89q.craftbook.mechanics.variables.VariableManager;
-import com.sk89q.craftbook.util.*;
+import com.sk89q.craftbook.util.ArrayUtil;
+import com.sk89q.craftbook.util.CompatabilityUtil;
+import com.sk89q.craftbook.util.ItemSyntax;
+import com.sk89q.craftbook.util.RegexUtil;
+import com.sk89q.craftbook.util.UUIDMappings;
 import com.sk89q.craftbook.util.compat.companion.CompanionPlugins;
+import com.sk89q.craftbook.util.compat.nms.NMSAdapter;
 import com.sk89q.craftbook.util.persistent.PersistentStorage;
-import com.sk89q.minecraft.util.commands.*;
+import com.sk89q.minecraft.util.commands.CommandException;
+import com.sk89q.minecraft.util.commands.CommandPermissionsException;
+import com.sk89q.minecraft.util.commands.CommandUsageException;
+import com.sk89q.minecraft.util.commands.CommandsManager;
+import com.sk89q.minecraft.util.commands.MissingNestedCommandException;
+import com.sk89q.minecraft.util.commands.SimpleInjector;
+import com.sk89q.minecraft.util.commands.WrappedCommandException;
 import com.sk89q.util.yaml.YAMLFormat;
 import com.sk89q.util.yaml.YAMLProcessor;
 import com.sk89q.wepif.PermissionsResolverManager;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Chunk;
+import org.bukkit.Server;
+import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
@@ -52,14 +120,30 @@ import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Random;
+import java.util.TreeMap;
 import java.util.jar.JarFile;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
+
+import javax.annotation.Nullable;
 
 public class CraftBookPlugin extends JavaPlugin {
 
@@ -125,12 +209,17 @@ public class CraftBookPlugin extends JavaPlugin {
      */
     private SelfTriggeringManager selfTriggerManager;
 
+    /**
+     * The NMS Adapter.
+     */
+    private NMSAdapter nmsAdapter;
+
     public static final Map<String, Class<? extends CraftBookMechanic>> availableMechanics;
 
     public boolean useLegacyCartSystem = false;
 
     static {
-        availableMechanics = new TreeMap<String, Class<? extends CraftBookMechanic>>();
+        availableMechanics = new TreeMap<>();
 
         availableMechanics.put("Variables", VariableManager.class);
         availableMechanics.put("CommandItems", CommandItems.class);
@@ -202,7 +291,6 @@ public class CraftBookPlugin extends JavaPlugin {
         availableMechanics.put("MinecartRailPlacer", RailPlacer.class);
         availableMechanics.put("MinecartSpeedModifiers", com.sk89q.craftbook.mechanics.minecart.SpeedModifiers.class);
         availableMechanics.put("MinecartEmptySlowdown", EmptySlowdown.class);
-        availableMechanics.put("MinecartRailPlacer", RailPlacer.class);
         availableMechanics.put("MinecartNoCollide", NoCollide.class);
         availableMechanics.put("MinecartPlaceAnywhere", PlaceAnywhere.class);
         availableMechanics.put("MinecartTemporaryCart", TemporaryCart.class);
@@ -227,24 +315,9 @@ public class CraftBookPlugin extends JavaPlugin {
         instance = this;
     }
 
+    @Nullable
     public static String getVersion() {
-
-        return "3.9";
-    }
-
-    /**
-     * Gets the build equivalent of the last stable version.
-     * 
-     * @return the build number
-     */
-    public static String getStableBuild() {
-
-        return "DISABLE";//"3895";
-    }
-
-    public static int getUpdaterID() {
-
-        return 31055;
+        return null;
     }
 
     public List<CraftBookMechanic> getMechanics() {
@@ -283,12 +356,36 @@ public class CraftBookPlugin extends JavaPlugin {
     }
 
     /**
+     * Retrieve the NMS Adapter.
+     *
+     * <p>
+     *     Note: This may not actually be using NMS.
+     * </p>
+     *
+     * @return The NMS Adapter
+     */
+    public NMSAdapter getNmsAdapter() {
+        return this.nmsAdapter;
+    }
+
+    /**
+     * Sets the NMS Adapter.
+     *
+     * @param nmsAdapter The NMS Adapter
+     */
+    public void setNmsAdapter(NMSAdapter nmsAdapter) {
+        this.nmsAdapter = nmsAdapter;
+    }
+
+    /**
      * Called on plugin enable.
      */
     @Override
     public void onEnable() {
 
         ItemSyntax.plugin = this;
+
+        nmsAdapter = new NMSAdapter();
 
         plugins = new CompanionPlugins();
         plugins.initiate(this);
@@ -403,27 +500,9 @@ public class CraftBookPlugin extends JavaPlugin {
             }
 
         if(!foundAMech) {
-            Bukkit.getScheduler().runTaskTimer(this, new Runnable() {
-                @Override
-                public void run () {
-                    getLogger().warning(ChatColor.RED + "Warning! You have no mechanics enabled, the plugin will appear to do nothing until a feature is enabled!");
-                }
-            }, 20L, 20*60*5);
+            Bukkit.getScheduler().runTaskTimer(this,
+                    () -> getLogger().warning(ChatColor.RED + "Warning! You have no mechanics enabled, the plugin will appear to do nothing until a feature is enabled!"), 20L, 20*60*5);
         }
-    }
-
-    public boolean updateAvailable = false;
-    private String latestVersion = null;
-    private long updateSize = 0;
-
-    public String getLatestVersion() {
-
-        return latestVersion;
-    }
-
-    public boolean isUpdateAvailable() {
-
-        return updateAvailable;
     }
 
     private YAMLProcessor mechanismsConfig;
@@ -446,15 +525,9 @@ public class CraftBookPlugin extends JavaPlugin {
         languageManager = new LanguageManager();
         languageManager.init();
 
-        getServer().getScheduler().runTask(this, new Runnable() {
+        getServer().getScheduler().runTask(this, CompatabilityUtil::init);
 
-            @Override
-            public void run () {
-                CompatabilityUtil.init();
-            }
-        });
-
-        mechanics = new ArrayList<CraftBookMechanic>();
+        mechanics = new ArrayList<>();
 
         logDebugMessage("Initializing Mechanisms!", "startup");
 
@@ -610,12 +683,6 @@ public class CraftBookPlugin extends JavaPlugin {
         logDebugMessage("Registring managers!", "startup");
         getServer().getPluginManager().registerEvents(managerAdapter, inst());
 
-        if(config.updateNotifier) {
-
-            logDebugMessage("Performing update checks!", "startup");
-            checkForUpdates();
-        }
-
         if(config.easterEggs) {
             Bukkit.getScheduler().runTaskLater(this, new Runnable() {
 
@@ -685,51 +752,6 @@ public class CraftBookPlugin extends JavaPlugin {
             }
         } catch (Throwable e1) {
             BukkitUtil.printStacktrace(e1);
-        }
-    }
-
-    public void checkForUpdates() {
-
-        boolean exempt = false;
-
-        try {
-            int ver = Integer.parseInt(getDescription().getVersion().split(":")[1].split("-")[0]);
-            if (ver < 1541) //Not valid prior to this version.
-                exempt = true;
-        }
-        catch(Exception e) {
-            exempt = true;
-        }
-
-        if(!exempt) {
-            final Updater updater = new Updater(this, getUpdaterID(), getFile(), Updater.UpdateType.NO_DOWNLOAD, true); // Start Updater but just do a version check
-            updateAvailable = updater.getResult() == Updater.UpdateResult.UPDATE_AVAILABLE; // Determine if there is an update ready for us
-            latestVersion = updater.getLatestName();
-
-            getLogger().info(latestVersion + " is the latest version available, and the updatability of it is: " + updater.getResult().name() + ". You currently have version " + latestVersion + " installed.");
-
-            if(updateAvailable) {
-
-                for (Player player : getServer().getOnlinePlayers()) {
-                    if (hasPermission(player, "craftbook.update")) {
-                        player.sendMessage(ChatColor.YELLOW + "An update is available: " + latestVersion + "(" + updateSize + " bytes)");
-                        player.sendMessage(ChatColor.YELLOW + "Type /cb update if you would like to update.");
-                    }
-                }
-
-                getServer().getPluginManager().registerEvents(new Listener() {
-                    @EventHandler
-                    public void onPlayerJoin (PlayerJoinEvent event) {
-                        Player player = event.getPlayer();
-                        if (hasPermission(player, "craftbook.update")) {
-                            player.sendMessage(ChatColor.YELLOW + "An update is available: " + latestVersion + "(" + updateSize + " bytes)");
-                            player.sendMessage(ChatColor.YELLOW + "Type /cb update if you would like to update.");
-                        }
-                    }
-                }, CraftBookPlugin.inst());
-            }
-        } else {
-            getLogger().info("The Auto-Updater is disabled for your version!");
         }
     }
 

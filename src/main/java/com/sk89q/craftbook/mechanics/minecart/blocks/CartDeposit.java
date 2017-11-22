@@ -1,17 +1,5 @@
 package com.sk89q.craftbook.mechanics.minecart.blocks;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-
-import org.bukkit.block.Chest;
-import org.bukkit.entity.minecart.StorageMinecart;
-import org.bukkit.event.EventHandler;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemStack;
-
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.mechanics.minecart.events.CartBlockImpactEvent;
 import com.sk89q.craftbook.util.ItemInfo;
@@ -21,6 +9,17 @@ import com.sk89q.craftbook.util.RedstoneUtil.Power;
 import com.sk89q.craftbook.util.RegexUtil;
 import com.sk89q.craftbook.util.Tuple2;
 import com.sk89q.util.yaml.YAMLProcessor;
+import org.bukkit.block.Chest;
+import org.bukkit.entity.minecart.StorageMinecart;
+import org.bukkit.event.EventHandler;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 public class CartDeposit extends CartBlockMechanism {
 
@@ -41,7 +40,7 @@ public class CartDeposit extends CartBlockMechanism {
         boolean collecting = event.getBlocks().matches("collect");
 
         // go
-        List<Tuple2<ItemInfo, Integer>> items = new ArrayList<Tuple2<ItemInfo, Integer>>();
+        List<Tuple2<ItemInfo, Integer>> items = new ArrayList<>();
         for(String data : RegexUtil.COMMA_PATTERN.split(event.getBlocks().getSign().getLine(2))) {
             int itemID = -1;
             short itemData = -1;
@@ -58,14 +57,14 @@ public class CartDeposit extends CartBlockMechanism {
                 continue;
             }
 
-            items.add(new Tuple2<ItemInfo, Integer>(new ItemInfo(itemID, itemData), amount));
+            items.add(new Tuple2<>(new ItemInfo(itemID, itemData), amount));
         }
 
         Inventory cartinventory = ((StorageMinecart) event.getMinecart()).getInventory();
-        ArrayList<ItemStack> leftovers = new ArrayList<ItemStack>();
+        ArrayList<ItemStack> leftovers = new ArrayList<>();
 
         // search for containers
-        List<Chest> containers = new ArrayList<Chest>(RailUtil.getNearbyChests(event.getBlocks().base));
+        List<Chest> containers = new ArrayList<>(RailUtil.getNearbyChests(event.getBlocks().base));
         containers.addAll(RailUtil.getNearbyChests(event.getBlocks().rail));
 
         // are there any containers?
@@ -73,7 +72,7 @@ public class CartDeposit extends CartBlockMechanism {
 
         if (collecting) {
             // collecting
-            ArrayList<ItemStack> transferItems = new ArrayList<ItemStack>();
+            ArrayList<ItemStack> transferItems = new ArrayList<>();
             if (!items.isEmpty()) {
                 for (ItemStack item : cartinventory.getContents()) {
                     if (!ItemUtil.isStackValid(item))
@@ -91,10 +90,10 @@ public class CartDeposit extends CartBlockMechanism {
                                     if(item.getAmount() > inf.b) {
                                         stack.setAmount(inf.b);
                                         iter.remove();
-                                        items.add(new Tuple2<ItemInfo, Integer>(inf.a, 0));
+                                        items.add(new Tuple2<>(inf.a, 0));
                                     } else {
                                         iter.remove();
-                                        items.add(new Tuple2<ItemInfo, Integer>(inf.a, inf.b - stack.getAmount()));
+                                        items.add(new Tuple2<>(inf.a, inf.b - stack.getAmount()));
                                     }
                                     transferItems.add(stack.clone());
                                     cartinventory.removeItem(stack);
@@ -129,7 +128,7 @@ public class CartDeposit extends CartBlockMechanism {
                 transferItems.addAll(leftovers);
                 leftovers.clear();
 
-                container.update();
+                //container.update();
             }
 
             CraftBookPlugin.logDebugMessage("collected items. " + transferItems.size() + " stacks left over.", "cart-deposit.collect");
@@ -142,7 +141,7 @@ public class CartDeposit extends CartBlockMechanism {
             CraftBookPlugin.logDebugMessage("collection done. " + transferItems.size() + " stacks wouldn't fit back.", "cart-deposit.collect");
         } else {
             // depositing
-            ArrayList<ItemStack> transferitems = new ArrayList<ItemStack>();
+            ArrayList<ItemStack> transferitems = new ArrayList<>();
 
             for (Chest container : containers) {
                 Inventory containerinventory = container.getInventory();
@@ -157,19 +156,19 @@ public class CartDeposit extends CartBlockMechanism {
                                 if (inf.a.getData() < 0 || inf.a.getData() == item.getDurability()) {
                                     if(inf.b < 0) {
                                         transferitems.add(item.clone());
-                                        cartinventory.remove(item);
+                                        containerinventory.remove(item);
                                     } else {
                                         ItemStack stack = item.clone();
                                         if(item.getAmount() > inf.b) {
                                             stack.setAmount(inf.b);
                                             iter.remove();
-                                            items.add(new Tuple2<ItemInfo, Integer>(inf.a, 0));
+                                            items.add(new Tuple2<>(inf.a, 0));
                                         } else {
                                             iter.remove();
-                                            items.add(new Tuple2<ItemInfo, Integer>(inf.a, inf.b - stack.getAmount()));
+                                            items.add(new Tuple2<>(inf.a, inf.b - stack.getAmount()));
                                         }
                                         transferitems.add(stack.clone());
-                                        cartinventory.removeItem(stack);
+                                        containerinventory.removeItem(stack);
                                     }
                                 }
                         }
@@ -178,7 +177,7 @@ public class CartDeposit extends CartBlockMechanism {
                     transferitems.addAll(Arrays.asList(containerinventory.getContents()));
                     containerinventory.clear();
                 }
-                container.update();
+                // container.update();
             }
 
             transferitems.removeAll(Collections.singleton(null));

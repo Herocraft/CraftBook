@@ -86,21 +86,16 @@ public class FlameThrower extends AbstractIC {
             for (int i = 0; i < distance; i++) {
 
                 final int fi = i;
-                CraftBookPlugin.inst().getServer().getScheduler().runTaskLater(CraftBookPlugin.inst(), new Runnable() {
+                CraftBookPlugin.inst().getServer().getScheduler().runTaskLater(CraftBookPlugin.inst(), () -> {
 
-                    @Override
-                    public void run () {
-
-                        Block fire = block.getRelative(direction, 2+fi);
-                        if (make) {
-                            if (fire.getType() == Material.AIR || fire.getType() == Material.LONG_GRASS) {
-                                fire.setType(Material.FIRE);
-                            }
-                        } else if (fire.getType() == Material.FIRE) {
-                            fire.setType(Material.AIR);
+                    Block fire = block.getRelative(direction, 2+fi);
+                    if (make) {
+                        if (fire.getType() == Material.AIR || fire.getType() == Material.LONG_GRASS) {
+                            fire.setType(Material.FIRE);
                         }
+                    } else if (fire.getType() == Material.FIRE) {
+                        fire.setType(Material.AIR);
                     }
-
                 }, delay*fi);
             }
         }
@@ -127,6 +122,12 @@ public class FlameThrower extends AbstractIC {
             return "Makes a line of fire.";
         }
 
+        @Override public String[] getLongDescription() {
+            return new String[] {
+                    "The '''MC1252''' sets a certain length of blocks in fron of the IC block on fire (putting fire Block on top of them)."
+            };
+        }
+
         @Override
         public void verify(ChangedSign sign) throws ICVerificationException {
 
@@ -148,6 +149,7 @@ public class FlameThrower extends AbstractIC {
         @Override
         public void addConfiguration(YAMLProcessor config, String path) {
 
+            config.setComment(path + "max-fire-range", "The maximum range the Flamethrower IC can be set to.");
             maxRange = config.getInt(path + "max-fire-range", 20);
         }
     }

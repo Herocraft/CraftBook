@@ -49,6 +49,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockRedstoneEvent;
+import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.vehicle.VehicleEnterEvent;
 import org.bukkit.event.vehicle.VehicleMoveEvent;
@@ -67,7 +68,7 @@ import java.util.Set;
  */
 final class MechanicListenerAdapter implements Listener {
 
-    private Set<String> signClickTimer = new HashSet<String>();
+    private Set<String> signClickTimer = new HashSet<>();
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerInteract(final PlayerInteractEvent event) {
@@ -98,12 +99,7 @@ final class MechanicListenerAdapter implements Listener {
                     return;
                 } else {
                     signClickTimer.add(event.getPlayer().getName());
-                    Bukkit.getScheduler().runTaskLater(CraftBookPlugin.inst(), new Runnable() {
-                        @Override
-                        public void run () {
-                            signClickTimer.remove(event.getPlayer().getName());
-                        }
-                    }, CraftBookPlugin.inst().getConfiguration().signClickTimeout);
+                    Bukkit.getScheduler().runTaskLater(CraftBookPlugin.inst(), () -> signClickTimer.remove(event.getPlayer().getName()), CraftBookPlugin.inst().getConfiguration().signClickTimeout);
                 }
             }
             SignClickEvent ev = new SignClickEvent(event.getPlayer(), action, event.getItem(), block, event.getBlockFace());
@@ -302,8 +298,11 @@ final class MechanicListenerAdapter implements Listener {
                 if(button != null) {
                     BlockFace face = button.getAttachedFace();
                     if(face != null)
-                        handleDirectWireInput(new WorldVector(w, x + face.getModX()*2, y, z + face.getModZ()*2), block, oldLevel, newLevel);
+                        handleDirectWireInput(new WorldVector(w, x + face.getModX()*2, y + face.getModY()*2, z + face.getModZ()*2), block, oldLevel, newLevel);
                 }
+                break;
+            case BlockID.POWERED_RAIL:
+                return;
         }
 
         // For redstone wires and repeaters, the code already exited this method
@@ -343,16 +342,12 @@ final class MechanicListenerAdapter implements Listener {
         CraftBookPlugin.inst().getServer().getPluginManager().callEvent(event);
 
         if(CraftBookPlugin.inst().useLegacyCartSystem) {
-            CraftBookPlugin.server().getScheduler().runTask(CraftBookPlugin.inst(), new Runnable() {
-
-                @Override
-                public void run() {
-                    try {
-                        CartMechanismBlocks cmb = CartMechanismBlocks.find(event.getBlock());
-                        CartBlockRedstoneEvent ev = new CartBlockRedstoneEvent(event.getBlock(), event.getSource(), event.getOldCurrent(), event.getNewCurrent(), cmb, CartBlockMechanism.getCart(cmb.rail));
-                        CraftBookPlugin.inst().getServer().getPluginManager().callEvent(ev);
-                    } catch (InvalidMechanismException ignored) {
-                    }
+            CraftBookPlugin.server().getScheduler().runTask(CraftBookPlugin.inst(), () -> {
+                try {
+                    CartMechanismBlocks cmb = CartMechanismBlocks.find(event.getBlock());
+                    CartBlockRedstoneEvent ev = new CartBlockRedstoneEvent(event.getBlock(), event.getSource(), event.getOldCurrent(), event.getNewCurrent(), cmb, CartBlockMechanism.getCart(cmb.rail));
+                    CraftBookPlugin.inst().getServer().getPluginManager().callEvent(ev);
+                } catch (InvalidMechanismException ignored) {
                 }
             });
         }
@@ -405,6 +400,17 @@ final class MechanicListenerAdapter implements Listener {
                         event.setCancelled(true);
                 } catch (InvalidMechanismException ignored) {
                 }
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onSignChange(SignChangeEvent event) {
+        for (int i = 0; i < 4; i++) {
+            String line = event.getLine(i);
+            if (line.startsWith("&0")) {
+                line = line.substring(2);
+                event.setLine(i, line);
             }
         }
     }

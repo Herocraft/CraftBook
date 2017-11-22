@@ -1,6 +1,7 @@
 package com.sk89q.craftbook.mechanics.crafting;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import org.bukkit.inventory.ItemStack;
 
@@ -16,12 +17,7 @@ public class CraftingItemStack implements Comparable<CraftingItemStack> {
     private ItemStack item;
 
     //Advanced data
-    private HashMap<String, Object> advancedData = new HashMap<String, Object>();
-
-    public HashMap<String, Object> getAllAdvancedData() {
-
-        return advancedData;
-    }
+    private HashMap<String, Object> advancedData = new HashMap<>();
 
     public boolean hasAdvancedData() {
         return !advancedData.isEmpty();
@@ -41,42 +37,34 @@ public class CraftingItemStack implements Comparable<CraftingItemStack> {
     }
 
     public CraftingItemStack(ItemStack item) {
-
         this.item = item;
         if(item != null && item.hasItemMeta()) //We have some advanced data to set.
             addAdvancedData("item-meta", true);
     }
 
     public ItemStack getItemStack() {
-
         return item;
     }
 
     public CraftingItemStack add(CraftingItemStack stack) {
-
         if (stack.isSameType(this)) {
-            ItemUtil.addToStack(item, stack.getItemStack());
-            advancedData.putAll(stack.getAllAdvancedData());
+            ItemUtil.addToStack(item, stack.item);
+            advancedData.putAll(stack.advancedData);
         }
         return this;
     }
 
     public boolean isSameType(CraftingItemStack stack) {
-
         return ItemUtil.areItemsIdentical(item, stack.item, false, false, false);
     }
 
     @Override
     public int compareTo(CraftingItemStack stack) {
-
-        if (stack.getItemStack().getAmount() > item.getAmount()) return 1;
-        if (stack.getItemStack().getAmount() == item.getAmount()) return 0;
-        return -1;
+        return Integer.compare(stack.item.getAmount(), item.getAmount());
     }
 
     @Override
     public int hashCode() {
-
         final int prime = 31;
         int result = 1;
         result = prime * result + item.hashCode();
@@ -86,28 +74,28 @@ public class CraftingItemStack implements Comparable<CraftingItemStack> {
 
     @Override
     public boolean equals(Object obj) {
-
         if (obj instanceof CraftingItemStack) {
             CraftingItemStack stack = (CraftingItemStack) obj;
-            if(stack.advancedData.size() != advancedData.size())
+            if(stack.advancedData.size() != advancedData.size()) {
                 return false;
-            if(stack.hasAdvancedData() != hasAdvancedData())
-                return false;
-            for(String key : advancedData.keySet())
-                if(!stack.hasAdvancedData(key))
+            }
+            for(Map.Entry<String, Object> advancedDataEntries : advancedData.entrySet()) {
+                if (!stack.hasAdvancedData(advancedDataEntries.getKey())) {
                     return false;
-            return isSameType(stack) && stack.getItemStack().getAmount() == getItemStack().getAmount();
+                } else if (!advancedDataEntries.getValue().equals(stack.getAdvancedData(advancedDataEntries.getKey()))){
+                    return false;
+                }
+            }
+            return isSameType(stack) && stack.item.getAmount() == item.getAmount();
         }
         return false;
     }
 
     @Override
     public String toString() {
-
-        String it = ItemSyntax.getStringFromItem(getItemStack());
-
+        String it = ItemSyntax.getStringFromItem(item);
         if(hasAdvancedData("chance"))
-            it = it + "%" + getAdvancedData("chance");
+            it = it + '%' + getAdvancedData("chance");
         return it;
     }
 }

@@ -1,20 +1,20 @@
 package com.sk89q.craftbook.mechanics.variables;
 
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
-import com.sk89q.craftbook.mechanics.ic.IC;
 import com.sk89q.craftbook.mechanics.ic.ICManager;
 import com.sk89q.craftbook.util.RegexUtil;
+import com.sk89q.craftbook.util.Tuple2;
 import com.sk89q.craftbook.util.exceptions.FastCommandException;
 import com.sk89q.minecraft.util.commands.Command;
 import com.sk89q.minecraft.util.commands.CommandContext;
 import com.sk89q.minecraft.util.commands.CommandException;
 import com.sk89q.minecraft.util.commands.CommandPermissionsException;
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import java.util.Iterator;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map.Entry;
 
 public class VariableCommands {
@@ -28,6 +28,11 @@ public class VariableCommands {
 
     @Command(aliases = "set", desc = "Sets a variable.", max=2, min=2, flags="n:", usage = "<Variable> <Value> -n <Namespace>")
     public void set(CommandContext context, CommandSender sender) throws CommandException {
+
+        if (VariableManager.instance == null) {
+            sender.sendMessage(ChatColor.RED + "Variables are not enabled!");
+            return;
+        }
 
         String key = "global";
 
@@ -56,6 +61,11 @@ public class VariableCommands {
     @Command(aliases = "define", desc = "Defines a variable.", max=2, min=2, flags="n:", usage = "<Variable> <Value> -n <Namespace>")
     public void define(CommandContext context, CommandSender sender) throws CommandException {
 
+        if (VariableManager.instance == null) {
+            sender.sendMessage(ChatColor.RED + "Variables are not enabled!");
+            return;
+        }
+
         String key = "global";
 
         if(!VariableManager.instance.defaultToGlobal && sender instanceof Player)
@@ -82,6 +92,11 @@ public class VariableCommands {
     @Command(aliases = "get", desc = "Checks a variable.", max=1, min=1, flags="n:", usage = "<Variable> -n <Namespace>")
     public void get(CommandContext context, CommandSender sender) throws CommandException {
 
+        if (VariableManager.instance == null) {
+            sender.sendMessage(ChatColor.RED + "Variables are not enabled!");
+            return;
+        }
+
         String key = "global";
 
         if(!VariableManager.instance.defaultToGlobal && sender instanceof Player)
@@ -101,8 +116,70 @@ public class VariableCommands {
             throw new FastCommandException("Unknown Variable!");
     }
 
+    @Command(aliases = "list", desc = "Lists variables", flags="an:p:", usage = "-p <page> -n <Namespace> -a")
+    public void list(CommandContext context, CommandSender sender) throws CommandException {
+
+        if (VariableManager.instance == null) {
+            sender.sendMessage(ChatColor.RED + "Variables are not enabled!");
+            return;
+        }
+
+        String key = "global";
+
+        if(!VariableManager.instance.defaultToGlobal && sender instanceof Player)
+            key = CraftBookPlugin.inst().wrapPlayer((Player) sender).getCraftBookId();
+
+        if(context.hasFlag('n'))
+            key = context.getFlag('n');
+
+        if (context.hasFlag('a'))
+            key = null;
+
+        List<String> variablesLines = new ArrayList<>();
+
+        for (Entry<Tuple2<String, String>, String> entry : VariableManager.instance.getVariableStore().entrySet()) {
+            if (key != null && !entry.getKey().a.equals(key)) {
+                continue;
+            }
+
+            String keyName = entry.getKey().b;
+            if (key == null) {
+                keyName = entry.getKey().a + '|' + keyName;
+            }
+
+            variablesLines.add(ChatColor.YELLOW + keyName + ChatColor.WHITE + ": " + ChatColor.GREEN + entry.getValue());
+        }
+
+        String[] lines = variablesLines.toArray(new String[variablesLines.size()]);
+        int pages = (lines.length - 1) / 9 + 1;
+        int accessedPage;
+
+        try {
+            accessedPage = !context.hasFlag('p') ? 0 : context.getFlagInteger('p') - 1;
+            if (accessedPage < 0 || accessedPage >= pages) {
+                sender.sendMessage(ChatColor.RED + "Invalid page \"" + context.getFlagInteger('p') + '"');
+                return;
+            }
+        } catch (NumberFormatException e) {
+            sender.sendMessage(ChatColor.RED + "Invalid page \"" + context.getFlag('p') + '"');
+            return;
+        }
+
+        sender.sendMessage(ChatColor.BLUE + "  ");
+        sender.sendMessage(ChatColor.BLUE + "Variables (Page " + (accessedPage + 1) + " of " + pages + "):");
+
+        for (int i = accessedPage * 9; i < lines.length && i < (accessedPage + 1) * 9; i++) {
+            sender.sendMessage(lines[i]);
+        }
+    }
+
     @Command(aliases = {"erase","remove","delete","rm"}, desc = "Erase a variable.", max=1, min=1, flags="n:", usage = "<Variable> -n <Namespace>")
     public void erase(CommandContext context, CommandSender sender) throws CommandException {
+
+        if (VariableManager.instance == null) {
+            sender.sendMessage(ChatColor.RED + "Variables are not enabled!");
+            return;
+        }
 
         String key = "global";
 
@@ -129,17 +206,18 @@ public class VariableCommands {
 
         if(ICManager.inst() != null) {//Make sure IC's are enabled.
 
-            Iterator<Entry<Location, IC>> iterator = ICManager.getCachedICs().entrySet().iterator();
-            while(iterator.hasNext()) {
-                Entry<Location, IC> ic = iterator.next();
-                if(ic.getValue().getSign().hasVariable(namespace + '|' + variable) || ic.getValue().getSign().hasVariable(variable))
-                    iterator.remove();
-            }
+            ICManager.getCachedICs().entrySet()
+                    .removeIf(ic -> ic.getValue().getSign().hasVariable(namespace + '|' + variable) || ic.getValue().getSign().hasVariable(variable));
         }
     }
 
     @Command(aliases = "append", desc = "Append to a variable.", max=2, min=2, flags="n:", usage = "<Variable> <Appended Value> -n <Namespace>")
     public void append(CommandContext context, CommandSender sender) throws CommandException {
+
+        if (VariableManager.instance == null) {
+            sender.sendMessage(ChatColor.RED + "Variables are not enabled!");
+            return;
+        }
 
         String key = "global";
 
@@ -168,6 +246,11 @@ public class VariableCommands {
     @Command(aliases = "prepend", desc = "Prepend to a variable.", max=2, min=2, flags="n:", usage = "<Variable> <Prepended Value> -n <Namespace>")
     public void prepend(CommandContext context, CommandSender sender) throws CommandException {
 
+        if (VariableManager.instance == null) {
+            sender.sendMessage(ChatColor.RED + "Variables are not enabled!");
+            return;
+        }
+
         String key = "global";
 
         if(!VariableManager.instance.defaultToGlobal && sender instanceof Player)
@@ -194,6 +277,11 @@ public class VariableCommands {
 
     @Command(aliases = "toggle", desc = "Toggle a boolean.", max=1, min=1, flags="n:", usage = "<Variable> -n <Namespace>")
     public void toggle(CommandContext context, CommandSender sender) throws CommandException {
+
+        if (VariableManager.instance == null) {
+            sender.sendMessage(ChatColor.RED + "Variables are not enabled!");
+            return;
+        }
 
         String key = "global";
 
@@ -228,6 +316,11 @@ public class VariableCommands {
 
     @Command(aliases = "add", desc = "Add to a numeric variable.", max=2, min=2, flags="n:", usage = "<Variable> <Added Value> -n <Namespace>")
     public void add(CommandContext context, CommandSender sender) throws CommandException {
+
+        if (VariableManager.instance == null) {
+            sender.sendMessage(ChatColor.RED + "Variables are not enabled!");
+            return;
+        }
 
         String key = "global";
 
@@ -268,6 +361,11 @@ public class VariableCommands {
     @Command(aliases = "subtract", desc = "Subtract from a numeric variable.", max=2, min=2, flags="n:", usage = "<Variable> <Subtracting Value> -n <Namespace>")
     public void subtract(CommandContext context, CommandSender sender) throws CommandException {
 
+        if (VariableManager.instance == null) {
+            sender.sendMessage(ChatColor.RED + "Variables are not enabled!");
+            return;
+        }
+
         String key = "global";
 
         if(!VariableManager.instance.defaultToGlobal && sender instanceof Player)
@@ -307,6 +405,11 @@ public class VariableCommands {
     @Command(aliases = {"multiply","multiple"}, desc = "Multiply a numeric variable.", max=2, min=2, flags="n:", usage = "<Variable> <Multiplying Value> -n <Namespace>")
     public void multiple(CommandContext context, CommandSender sender) throws CommandException {
 
+        if (VariableManager.instance == null) {
+            sender.sendMessage(ChatColor.RED + "Variables are not enabled!");
+            return;
+        }
+
         String key = "global";
 
         if(!VariableManager.instance.defaultToGlobal && sender instanceof Player)
@@ -345,6 +448,11 @@ public class VariableCommands {
 
     @Command(aliases = "divide", desc = "Divide a numeric variable.", max=2, min=2, flags="n:", usage = "<Variable> <Dividing Value> -n <Namespace>")
     public void divide(CommandContext context, CommandSender sender) throws CommandException {
+
+        if (VariableManager.instance == null) {
+            sender.sendMessage(ChatColor.RED + "Variables are not enabled!");
+            return;
+        }
 
         String key = "global";
 

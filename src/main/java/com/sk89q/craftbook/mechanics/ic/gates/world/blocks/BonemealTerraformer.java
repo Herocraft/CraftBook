@@ -97,7 +97,7 @@ public class BonemealTerraformer extends AbstractSelfTriggeredIC {
             }
             return;
         }
-        if (b.getType() == Material.NETHER_WARTS && b.getData() < 0x3) {
+        if ((b.getType() == Material.NETHER_WARTS || b.getType() == Material.BEETROOT_BLOCK) && b.getData() < 0x3) {
             if (consumeBonemeal()) {
                 b.setData((byte) (b.getData() + 0x1));
             }
@@ -202,7 +202,7 @@ public class BonemealTerraformer extends AbstractSelfTriggeredIC {
 
     }
 
-    public boolean isSameSapling(Block sapling, Block other) {
+    public static boolean isSameSapling(Block sapling, Block other) {
 
         return sapling.getType() == other.getType() && (other.getData() & 3) == (sapling.getData() & 3);
     }

@@ -40,6 +40,26 @@ public class Driller extends AbstractSelfTriggeredIC {
         return "DRILLER";
     }
 
+    private int signDrillSize;
+    private int signMaxDepth;
+
+    @Override
+    public void load() {
+        super.load();
+
+        signDrillSize = ((Factory) getFactory()).drillSize;
+
+        if (!getSign().getLine(2).isEmpty()) {
+            signDrillSize = Math.min(signDrillSize, Integer.parseInt(getSign().getLine(2)));
+        }
+
+        signMaxDepth = ((Factory) getFactory()).maxDrillDepth;
+
+        if (!getSign().getLine(3).isEmpty()) {
+            signMaxDepth = Math.min(signMaxDepth, Integer.parseInt(getSign().getLine(3)));
+        }
+    }
+
     public boolean drill() {
 
         if (CraftBookPlugin.inst().getRandom().nextInt(100) < 60) return false;
@@ -54,58 +74,29 @@ public class Driller extends AbstractSelfTriggeredIC {
             }
         }
 
-        boolean hasHadTrue;
+        int random = CraftBookPlugin.inst().getRandom().nextInt(signDrillSize*signDrillSize);
+        int x = random / signDrillSize;
+        int y = random % signDrillSize;
 
-        switch (CraftBookPlugin.inst().getRandom().nextInt(9)) {
-            case 0:
-                hasHadTrue = drillLine(tool, center.getRelative(-1, 0, -1));
-                break;
-            case 1:
-                hasHadTrue = drillLine(tool, center.getRelative(-1, 0, 0));
-                break;
-            case 2:
-                hasHadTrue = drillLine(tool, center.getRelative(-1, 0, 1));
-                break;
-            case 3:
-                hasHadTrue = drillLine(tool, center.getRelative(0, 0, -1));
-                break;
-            case 4:
-                hasHadTrue = drillLine(tool, center.getRelative(0, 0, 0));
-                break;
-            case 5:
-                hasHadTrue = drillLine(tool, center.getRelative(0, 0, 1));
-                break;
-            case 6:
-                hasHadTrue = drillLine(tool, center.getRelative(1, 0, -1));
-                break;
-            case 7:
-                hasHadTrue = drillLine(tool, center.getRelative(1, 0, 0));
-                break;
-            case 8:
-                hasHadTrue = drillLine(tool, center.getRelative(1, 0, 1));
-                break;
-            default:
-                hasHadTrue = drillLine(tool, center.getRelative(0, 0, 0));
-                break;
-        }
-
-        return hasHadTrue;
+        return drillLine(tool, center.getRelative(signDrillSize/2 - x, 0, signDrillSize/2 - y));
     }
 
     public boolean drillLine(ItemStack tool, Block blockToBreak) {
 
         Material brokenType = Material.AIR;
+        int depth = 0;
         while (brokenType == Material.AIR) {
 
-            if (blockToBreak.getLocation().getBlockY() == 0) return false;
+            if (blockToBreak.getLocation().getBlockY() == 0 || depth > signMaxDepth) return false;
             blockToBreak = blockToBreak.getRelative(0, -1, 0);
+            depth += 1;
             brokenType = blockToBreak.getType();
             if (brokenType == Material.BEDROCK) return false;
             if (!((Factory)getFactory()).breakNonNatural)
                 if (brokenType != Material.AIR && !BlockType.isNaturalTerrainBlock(brokenType.getId())) return false;
         }
 
-        ICUtil.collectItem(this, new Vector(0, 2, 0), BlockUtil.getBlockDrops(blockToBreak, tool));
+        ICUtil.collectItem(this, new Vector(0, 1, 0), BlockUtil.getBlockDrops(blockToBreak, tool));
 
         brokenType = blockToBreak.getType();
         blockToBreak.setType(Material.AIR);
@@ -123,6 +114,8 @@ public class Driller extends AbstractSelfTriggeredIC {
     public static class Factory extends AbstractICFactory implements RestrictedIC, ConfigurableIC {
 
         boolean breakNonNatural;
+        int drillSize;
+        int maxDrillDepth;
 
         public Factory(Server server) {
 
@@ -144,13 +137,31 @@ public class Driller extends AbstractSelfTriggeredIC {
         @Override
         public String[] getLineHelp() {
 
-            return new String[] {null, null};
+            return new String[] {"+odrill size", "+omax depth"};
         }
 
         @Override
         public void addConfiguration(YAMLProcessor config, String path) {
 
             breakNonNatural = config.getBoolean(path + "break-unnatural-blocks", false);
+            drillSize = config.getInt(path + "drill-size", 3);
+            maxDrillDepth = config.getInt(path + "max-drill-depth", 256);
         }
+
+        @Override
+        public void verify(ChangedSign sign) throws ICVerificationException {
+
+            try {
+                if (!sign.getLine(2).isEmpty()) {
+                    sign.setLine(2, String.valueOf(Math.min(drillSize, Integer.parseInt(sign.getLine(2)))));
+                }
+                if (!sign.getLine(3).isEmpty()) {
+                    sign.setLine(3, String.valueOf(Math.min(maxDrillDepth, Integer.parseInt(sign.getLine(3)))));
+                }
+            } catch (Exception e) {
+                throw new ICVerificationException("Failed to parse numbers.");
+            }
+        }
+
     }
 }

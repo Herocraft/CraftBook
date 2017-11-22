@@ -9,7 +9,6 @@ import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.bukkit.util.BukkitUtil;
 import com.sk89q.craftbook.mechanics.ic.ICMechanic;
 
-import javax.sound.midi.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -17,50 +16,60 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import javax.sound.midi.InvalidMidiDataException;
+import javax.sound.midi.MidiMessage;
+import javax.sound.midi.MidiSystem;
+import javax.sound.midi.MidiUnavailableException;
+import javax.sound.midi.Receiver;
+import javax.sound.midi.Sequence;
+import javax.sound.midi.Sequencer;
+import javax.sound.midi.ShortMessage;
+
 /**
  * A sequencer that reads MIDI files.
  *
  * @author sk89q
+ * @author me4502
  */
 public final class MidiJingleSequencer implements JingleSequencer {
 
     private static final int[] instruments = {
         0, 0, 0, 0, 0, 0, 0, 5, // 8
-        6, 0, 0, 0, 0, 0, 0, 0, // 16
-        0, 0, 0, 0, 0, 0, 0, 5, // 24
-        5, 5, 5, 5, 5, 5, 5, 5, // 32
-        6, 6, 6, 6, 6, 6, 6, 6, // 40
-        5, 5, 5, 5, 5, 5, 5, 2, // 48
-        5, 5, 5, 5, 0, 0, 0, 0, // 56
-        0, 0, 0, 0, 0, 0, 0, 0, // 64
-        0, 0, 0, 0, 0, 0, 0, 0, // 72
-        0, 0, 0, 0, 0, 0, 0, 0, // 80
+        9, 9, 9, 9, 9, 6, 0, 9, // 16
+        9, 0, 0, 0, 0, 0, 0, 5, // 24
+        5, 5, 5, 5, 5, 5, 5, 1, // 32
+        1, 1, 1, 1, 1, 1, 1, 5, // 40
+        1, 5, 5, 5, 5, 5, 5, 5, // 48
+        5, 5, 5, 8, 8, 8, 8, 8, // 56
+        8, 8, 8, 8, 8, 8, 8, 8, // 64
+        8, 8, 8, 8, 8, 8, 8, 8, // 72
+        8, 8, 8, 8, 8, 8, 8, 8, // 80
         0, 0, 0, 0, 0, 0, 0, 0, // 88
         0, 0, 0, 0, 0, 0, 0, 0, // 96
-        0, 0, 0, 0, 0, 0, 0, 0, // 104
-        0, 0, 0, 0, 0, 0, 0, 0, // 112
-        1, 1, 1, 3, 1, 1, 1, 5, // 120
-        1, 1, 1, 1, 1, 2, 4, 3, // 128
+        0, 0, 0, 0, 0, 0, 0, 5, // 104
+        5, 5, 5, 9, 8, 5, 8, 6, // 112
+        6, 3, 3, 2, 2, 2, 6, 5, // 120
+        1, 1, 1, 6, 1, 2, 4, 7, // 128
     };
 
 
     private static final int[] percussion = {
-        3, 3, 4, 4, 3, 2, 3, 2, //8 - Electric Snare
-        2, 2, 2, 2, 2, 2, 2, 2, //16 - Hi Mid Tom
-        3, 2, 3, 3, 3, 0, 3, 3, //24 - Cowbell
-        3, 3, 3, 2, 2, 3, 3, 3, //32 - Low Conga
-        2, 2, 0, 0, 2, 2, 0, 0, //40 - Long Whistle
-        3, 3, 3, 3, 3, 3, 5, 5, //48 - Open Cuica
-        3, 3,                   //50 - Open Triangle
+        9, 6, 4, 4, 3, 2, 3, 2, //40 - Electric Snare
+        2, 2, 2, 2, 2, 2, 2, 2, //48 - Hi Mid Tom
+        7, 2, 7, 7, 6, 3, 7, 6, //56 - Cowbell
+        7, 3, 7, 2, 2, 3, 3, 3, //64 - Low Conga
+        2, 2, 6, 6, 2, 2, 0, 0, //72 - Long Whistle
+        3, 3, 3, 3, 3, 3, 5, 5, //80 - Open Cuica
+        10, 10,                 //82 - Open Triangle
     };
 
-    private Sequencer sequencer = null;
+    private Sequencer sequencer;
     private boolean running = false;
     private boolean playedBefore = false;
 
     private static final Object PLAYER_LOCK = new Object();
 
-    private Set<JingleNotePlayer> players = new HashSet<JingleNotePlayer>();
+    private volatile Set<JingleNotePlayer> players = new HashSet<>();
 
     public MidiJingleSequencer(File midiFile, boolean loop) throws MidiUnavailableException, InvalidMidiDataException, IOException {
         try {
@@ -70,13 +79,7 @@ public final class MidiJingleSequencer implements JingleSequencer {
             sequencer.setSequence(seq);
             if(loop)
                 sequencer.setLoopCount(Sequencer.LOOP_CONTINUOUSLY);
-        } catch (MidiUnavailableException e) {
-            stop();
-            throw e;
-        } catch (InvalidMidiDataException e) {
-            stop();
-            throw e;
-        } catch (IOException e) {
+        } catch (MidiUnavailableException | IOException | InvalidMidiDataException e) {
             stop();
             throw e;
         }
@@ -85,7 +88,7 @@ public final class MidiJingleSequencer implements JingleSequencer {
     @Override
     public void run() {
 
-        final Map<Integer, Integer> patches = new HashMap<Integer, Integer>();
+        final Map<Integer, Integer> patches = new HashMap<>();
 
         try {
             if(sequencer == null || sequencer.getSequence() == null)
@@ -98,8 +101,7 @@ public final class MidiJingleSequencer implements JingleSequencer {
 
                 @Override
                 public void send(MidiMessage message, long timeStamp) {
-
-                    if(players.isEmpty()) {
+                    if (getPlayerCount() == 0) {
                         running = false;
                         return;
                     }
@@ -135,14 +137,23 @@ public final class MidiJingleSequencer implements JingleSequencer {
                 }
             });
 
+            sequencer.addMetaEventListener(meta -> {
+                // END_OF_TRACK_MESSAGE
+                if (meta.getType() == 47) {
+                    running = false;
+                }
+            });
+
             try {
                 if (sequencer.isOpen()) {
                     sequencer.start();
                     running = true;
                     playedBefore = true;
-                    synchronized(PLAYER_LOCK) {
-                        for(JingleNotePlayer player : players)
-                            CraftBookPlugin.logDebugMessage("Opening midi sequencer: " + player.player, "midi");
+                    if (CraftBookPlugin.inst().getConfiguration().debugMode) {
+                        synchronized (PLAYER_LOCK) {
+                            for (JingleNotePlayer player : players)
+                                CraftBookPlugin.logDebugMessage("Opening midi sequencer: " + player.player, "midi");
+                        }
                     }
                 } else
                     throw new IllegalArgumentException("Sequencer is not open!");
@@ -158,7 +169,9 @@ public final class MidiJingleSequencer implements JingleSequencer {
     public void stop() {
 
         if(!running) return;
-        players.clear();
+        synchronized(PLAYER_LOCK) {
+            players.clear();
+        }
         CraftBookPlugin.logDebugMessage("Stopping MIDI sequencer. (Stop called)", "midi");
         if (sequencer != null) {
             try {
@@ -207,7 +220,6 @@ public final class MidiJingleSequencer implements JingleSequencer {
 
     @Override
     public boolean isPlaying () {
-
         return running && sequencer != null;
     }
 
@@ -218,22 +230,36 @@ public final class MidiJingleSequencer implements JingleSequencer {
 
     @Override
     public void stop (JingleNotePlayer player) {
-        players.remove(player);
-        if(players.isEmpty()) {
+        synchronized(PLAYER_LOCK) {
+            players.remove(player);
+        }
+
+        if (this.getPlayerCount() == 0) {
             stop();
         }
     }
 
     @Override
     public void play (JingleNotePlayer player) {
-        players.add(player);
+        synchronized(PLAYER_LOCK) {
+            players.add(player);
+        }
         if(!playedBefore) {
             run();
         }
     }
 
     @Override
+    public int getPlayerCount() {
+        return this.players.size();
+    }
+
+    @Override
     public Set<JingleNotePlayer> getPlayers () {
-        return players;
+        Set<JingleNotePlayer> copy;
+        synchronized(PLAYER_LOCK) {
+            copy = new HashSet<>(players);
+        }
+        return copy;
     }
 }

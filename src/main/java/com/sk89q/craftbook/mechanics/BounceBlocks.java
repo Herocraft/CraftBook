@@ -29,7 +29,7 @@ public class BounceBlocks extends AbstractCraftBookMechanic {
 
     List<ItemInfo> blocks;
     private double sensitivity;
-    private Map<ItemInfo, Vector> autoBouncers = new HashMap<ItemInfo, Vector>();
+    private Map<ItemInfo, Vector> autoBouncers = new HashMap<>();
 
     @Override
     public void loadConfiguration (YAMLProcessor config, String path) {
@@ -49,11 +49,15 @@ public class BounceBlocks extends AbstractCraftBookMechanic {
             double x = 0,y = 0,z = 0;
 
             String[] bits = RegexUtil.COMMA_PATTERN.split(config.getString(path + "auto-blocks." + key));
-            if(bits.length == 0)
+            if (bits.length == 0) {
                 y = 0.5;
-            if(bits.length == 1)
-                y = Double.parseDouble(bits[0]);
-            else {
+            } else if (bits.length == 1) {
+                try {
+                    y = Double.parseDouble(bits[0]);
+                } catch (NumberFormatException e) {
+                    y = 0.5;
+                }
+            } else {
                 x = Double.parseDouble(bits[0]);
                 y = Double.parseDouble(bits[1]);
                 z = Double.parseDouble(bits[2]);
@@ -90,15 +94,19 @@ public class BounceBlocks extends AbstractCraftBookMechanic {
 
                             CraftBookPlugin.logDebugMessage("Jump sign found where player jumped!", "bounce-blocks");
 
-                            double x = 0,y = 0,z = 0;
+                            double x = 0,y,z = 0;
                             boolean straight = s.getLine(2).startsWith("!");
 
                             String[] bits = RegexUtil.COMMA_PATTERN.split(StringUtils.replace(s.getLine(2), "!", ""));
-                            if(bits.length == 0)
+                            if (bits.length == 0) {
                                 y = 0.5;
-                            if(bits.length == 1)
-                                y = Double.parseDouble(bits[0]);
-                            else {
+                            } else if (bits.length == 1) {
+                                try {
+                                    y = Double.parseDouble(bits[0]);
+                                } catch (NumberFormatException e) {
+                                    y = 0.5;
+                                }
+                            } else {
                                 x = Double.parseDouble(bits[0]);
                                 y = Double.parseDouble(bits[1]);
                                 z = Double.parseDouble(bits[2]);
@@ -163,14 +171,13 @@ public class BounceBlocks extends AbstractCraftBookMechanic {
 
         try {
             String[] bits = RegexUtil.COMMA_PATTERN.split(StringUtils.replace(event.getLine(2), "!", ""));
-            if(bits.length == 0)
-                if(bits.length == 1)
-                    Double.parseDouble(bits[0]);
-                else {
-                    Double.parseDouble(bits[0]);
-                    Double.parseDouble(bits[1]);
-                    Double.parseDouble(bits[2]);
-                }
+            if (bits.length == 1) {
+                Double.parseDouble(bits[0]);
+            } else if (bits.length > 1) {
+                Double.parseDouble(bits[0]);
+                Double.parseDouble(bits[1]);
+                Double.parseDouble(bits[2]);
+            }
         } catch(Exception e){
             lplayer.printError("mech.bounceblocks.invalid-velocity");
             SignUtil.cancelSign(event);

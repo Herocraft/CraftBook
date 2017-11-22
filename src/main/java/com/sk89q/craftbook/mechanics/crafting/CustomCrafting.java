@@ -1,5 +1,6 @@
 package com.sk89q.craftbook.mechanics.crafting;
 
+import com.google.common.base.*;
 import com.sk89q.craftbook.AbstractCraftBookMechanic;
 import com.sk89q.craftbook.LocalPlayer;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
@@ -12,6 +13,7 @@ import com.sk89q.util.yaml.YAMLFormat;
 import com.sk89q.util.yaml.YAMLProcessor;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -32,11 +34,10 @@ public class CustomCrafting extends AbstractCraftBookMechanic {
 
     public static CustomCrafting INSTANCE;
 
-    public static final Map<Recipe, RecipeManager.Recipe> advancedRecipes = new HashMap<Recipe, RecipeManager.Recipe>();
+    private static final Map<Recipe, RecipeManager.Recipe> advancedRecipes = new HashMap<>();
 
     @Override
     public boolean enable() {
-
         INSTANCE = this;
         CraftBookPlugin.inst().createDefaultConfiguration(new File(CraftBookPlugin.inst().getDataFolder(), "crafting-recipes.yml"), "crafting-recipes.yml");
         new RecipeManager(new YAMLProcessor(new File(CraftBookPlugin.inst().getDataFolder(), "crafting-recipes.yml"), true, YAMLFormat.EXTENDED));
@@ -52,7 +53,6 @@ public class CustomCrafting extends AbstractCraftBookMechanic {
 
     @Override
     public void disable () {
-
         advancedRecipes.clear();
         RecipeManager.INSTANCE = null;
         INSTANCE = null;
@@ -66,11 +66,11 @@ public class CustomCrafting extends AbstractCraftBookMechanic {
             Recipe sh;
 
             if (r.getType() == RecipeManager.RecipeType.SHAPELESS) {
-                sh = new ShapelessRecipe(r.getResult().getItemStack());
+                sh = new ShapelessRecipe(new NamespacedKey(CraftBookPlugin.inst(), r.getId()), r.getResult().getItemStack());
                 for (CraftingItemStack is : r.getIngredients())
                     ((ShapelessRecipe) sh).addIngredient(is.getItemStack().getAmount(), is.getItemStack().getData());
             } else if (r.getType() == RecipeManager.RecipeType.SHAPED) {
-                sh = new ShapedRecipe(r.getResult().getItemStack());
+                sh = new ShapedRecipe(new NamespacedKey(CraftBookPlugin.inst(), r.getId()), r.getResult().getItemStack());
                 ((ShapedRecipe) sh).shape(r.getShape());
                 for (Entry<CraftingItemStack, Character> is : r.getShapedIngredients().entrySet())
                     ((ShapedRecipe) sh).setIngredient(is.getValue(), is.getKey().getItemStack().getData());
@@ -102,7 +102,6 @@ public class CustomCrafting extends AbstractCraftBookMechanic {
 
     @EventHandler(priority = EventPriority.LOW)
     public void prepareCraft(PrepareItemCraftEvent event) {
-
         if(!EventUtil.passesFilter(event)) return;
 
         ItemStack bits = null;
@@ -125,7 +124,7 @@ public class CustomCrafting extends AbstractCraftBookMechanic {
                     ItemStack[] tests = ((CraftingInventory)event.getView().getTopInventory()).getMatrix();
                     CraftingItemStack[] tests2;
                     if(recipe.getType() == RecipeType.SHAPED) {
-                        List<CraftingItemStack> stacks = new ArrayList<CraftingItemStack>();
+                        List<CraftingItemStack> stacks = new ArrayList<>();
 
                         for(String s : recipe.getShape())
                             for(char c : s.toCharArray())
@@ -136,14 +135,18 @@ public class CustomCrafting extends AbstractCraftBookMechanic {
                     } else
                         tests2 = recipe.getIngredients().toArray(new CraftingItemStack[recipe.getIngredients().size()]);
 
-                    ArrayList<ItemStack> leftovers = new ArrayList<ItemStack>();
-                    leftovers.addAll(Arrays.asList(tests));
+                    ArrayList<ItemStack> leftovers = new ArrayList<>(Arrays.asList(tests));
                     leftovers.removeAll(Collections.singleton(null));
 
                     for(ItemStack it : tests) {
 
-                        if(!ItemUtil.isStackValid(it))
+                        if(!ItemUtil.isStackValid(it)) {
+                            if (it != null) {
+                                CraftBookPlugin.logDebugMessage("Invalid item in recipe: " +
+                                                MoreObjects.toStringHelper(it).toString(), "advanced-data");
+                            }
                             continue;
+                        }
                         for(CraftingItemStack cit : tests2) {
 
                             if(ItemUtil.areBaseItemsIdentical(cit.getItemStack(), it)) {
@@ -201,7 +204,6 @@ public class CustomCrafting extends AbstractCraftBookMechanic {
 
     @EventHandler(priority = EventPriority.LOW)
     public void prepareFurnace(InventoryClickEvent event) {
-
         if(!EventUtil.passesFilter(event)) return;
 
         if(!(event.getInventory() instanceof FurnaceInventory)) return;
@@ -231,20 +233,18 @@ public class CustomCrafting extends AbstractCraftBookMechanic {
 
     @EventHandler(priority = EventPriority.LOW)
     public void onFurnaceCook(FurnaceSmeltEvent event) {
-
         if(!EventUtil.passesFilter(event)) return;
 
         ItemStack bits = null;
         CraftBookPlugin.logDebugMessage("Smelting has been initiated!", "advanced-data");
         for(Entry<Recipe, RecipeManager.Recipe> recipeRecipeEntry : advancedRecipes.entrySet()) {
-
             if(!(recipeRecipeEntry.getKey() instanceof FurnaceRecipe)) continue;
             try {
                 if(checkFurnaceRecipes((FurnaceRecipe) recipeRecipeEntry.getKey(), event.getSource(), event.getResult())) {
 
                     RecipeManager.Recipe recipe = recipeRecipeEntry.getValue();
 
-                    ArrayList<ItemStack> leftovers = new ArrayList<ItemStack>();
+                    ArrayList<ItemStack> leftovers = new ArrayList<>();
                     leftovers.add(event.getSource());
                     leftovers.removeAll(Collections.singleton(null));
 
@@ -315,7 +315,7 @@ public class CustomCrafting extends AbstractCraftBookMechanic {
         }
         if(recipe.hasAdvancedData("extra-results")) {
             CraftBookPlugin.logDebugMessage("A recipe with extra results is detected!", "advanced-data");
-            ArrayList<CraftingItemStack> stacks = new ArrayList<CraftingItemStack>((Collection<CraftingItemStack>) recipe.getAdvancedData("extra-results"));
+            ArrayList<CraftingItemStack> stacks = new ArrayList<>((Collection<CraftingItemStack>) recipe.getAdvancedData("extra-results"));
             for(CraftingItemStack stack : stacks) {
                 if(stack.hasAdvancedData("chance"))
                     if(CraftBookPlugin.inst().getRandom().nextDouble() < (Double)stack.getAdvancedData("chance"))
@@ -351,7 +351,6 @@ public class CustomCrafting extends AbstractCraftBookMechanic {
     }
 
     public static ItemStack craftItem(Recipe recipe) {
-
         for(Recipe rec : advancedRecipes.keySet()) {
             if(ItemUtil.areRecipesIdentical(rec, recipe))
                 return applyAdvancedEffects(recipe.getResult(),rec, null);
@@ -361,7 +360,6 @@ public class CustomCrafting extends AbstractCraftBookMechanic {
     }
 
     private static ItemStack applyAdvancedEffects(ItemStack stack, Recipe rep, Player player) {
-
         RecipeManager.Recipe recipe = advancedRecipes.get(rep);
 
         if(recipe == null)
@@ -373,8 +371,7 @@ public class CustomCrafting extends AbstractCraftBookMechanic {
         return res;
     }
 
-    private static boolean checkFurnaceRecipes(FurnaceRecipe rec1, ItemStack source, ItemStack result) throws InvalidCraftingException {
-
+    private static boolean checkFurnaceRecipes(FurnaceRecipe rec1, ItemStack source, ItemStack result) {
         if(ItemUtil.areBaseItemsIdentical(rec1.getInput(), source))
             if(ItemUtil.areBaseItemsIdentical(rec1.getResult(), result))
                 return true;

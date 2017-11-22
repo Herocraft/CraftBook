@@ -155,14 +155,10 @@ public class Bridge extends CuboidToggleMechanic {
         if (!SignUtil.isSign(event.getBlock())) return;
         if (!isApplicableSign(BukkitUtil.toChangedSign(event.getBlock()).getLine(1))) return;
 
-        Bukkit.getScheduler().runTaskLater(CraftBookPlugin.inst(), new Runnable() {
-
-            @Override
-            public void run () {
-                try {
-                    flipState(event.getBlock(), null);
-                } catch (InvalidMechanismException e) {
-                }
+        Bukkit.getScheduler().runTaskLater(CraftBookPlugin.inst(), () -> {
+            try {
+                flipState(event.getBlock(), null);
+            } catch (InvalidMechanismException e) {
             }
         }, 2L);
     }
@@ -211,7 +207,10 @@ public class Bridge extends CuboidToggleMechanic {
 
     @Override
     public CuboidRegion getCuboidArea(Block trigger, Block proximalBaseCenter, Block distalBaseCenter) throws InvalidMechanismException {
-
+        double distance = proximalBaseCenter.getLocation().distanceSquared(distalBaseCenter.getLocation());
+        if (distance <= 2*2) {
+            throw new InvalidMechanismException("Bridge too short!");
+        }
         CuboidRegion toggle = new CuboidRegion(BukkitUtil.toVector(proximalBaseCenter), BukkitUtil.toVector(distalBaseCenter));
         ChangedSign sign = BukkitUtil.toChangedSign(trigger);
         int left, right;

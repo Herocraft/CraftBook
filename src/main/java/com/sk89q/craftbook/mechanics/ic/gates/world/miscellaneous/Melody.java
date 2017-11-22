@@ -9,6 +9,8 @@ import java.util.Set;
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MidiUnavailableException;
 
+import com.sk89q.craftbook.mechanics.ic.*;
+import com.sk89q.util.yaml.YAMLProcessor;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Server;
@@ -17,14 +19,6 @@ import org.bukkit.entity.Player;
 import com.sk89q.craftbook.ChangedSign;
 import com.sk89q.craftbook.LocalPlayer;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
-import com.sk89q.craftbook.mechanics.ic.AbstractICFactory;
-import com.sk89q.craftbook.mechanics.ic.AbstractSelfTriggeredIC;
-import com.sk89q.craftbook.mechanics.ic.ChipState;
-import com.sk89q.craftbook.mechanics.ic.IC;
-import com.sk89q.craftbook.mechanics.ic.ICFactory;
-import com.sk89q.craftbook.mechanics.ic.ICManager;
-import com.sk89q.craftbook.mechanics.ic.ICMechanic;
-import com.sk89q.craftbook.mechanics.ic.ICVerificationException;
 import com.sk89q.craftbook.util.RegexUtil;
 import com.sk89q.craftbook.util.SearchArea;
 import com.sk89q.craftbook.util.jinglenote.JingleNoteManager;
@@ -76,8 +70,8 @@ public class Melody extends AbstractSelfTriggeredIC {
     @Override
     public void load() {
 
-        if(getLine(3).toUpperCase().contains(":START")) getSign().setLine(3, getLine(3).toUpperCase().replace(":START", ";START"));
-        if(getLine(3).toUpperCase().contains(":LOOP")) getSign().setLine(3, getLine(3).toUpperCase().replace(":LOOP", ";LOOP"));
+        if(getLine(3).contains(":START")) getSign().setLine(3, getLine(3).replace(":START", ";START"));
+        if(getLine(3).contains(":LOOP")) getSign().setLine(3, getLine(3).replace(":LOOP", ";LOOP"));
 
         String[] split = RegexUtil.SEMICOLON_PATTERN.split(getSign().getLine(3));
 
@@ -127,11 +121,7 @@ public class Melody extends AbstractSelfTriggeredIC {
             try {
                 player = new MelodyPlayer(new MidiJingleSequencer(file, loop));
                 hasRun = false;
-            } catch (MidiUnavailableException e) {
-                e.printStackTrace();
-            } catch (InvalidMidiDataException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
+            } catch (MidiUnavailableException | IOException | InvalidMidiDataException e) {
                 e.printStackTrace();
             }
         }
@@ -145,7 +135,9 @@ public class Melody extends AbstractSelfTriggeredIC {
                         player.stop(pp.getName());
                     } else if(!player.isPlaying(pp.getName()) && area.isWithinArea(pp.getLocation())) {
                         player.play(pp.getName());
-                        pp.sendMessage(ChatColor.YELLOW + "Playing " + midiName + "...");
+                        if (((Factory) getFactory()).showPlayingMessage) {
+                            pp.sendMessage(ChatColor.YELLOW + "Playing " + midiName + "...");
+                        }
                         if(!hasRun) {
                             Bukkit.getScheduler().runTaskAsynchronously(getPlugin(), player);
                             hasRun = true;
@@ -171,8 +163,8 @@ public class Melody extends AbstractSelfTriggeredIC {
         public MelodyPlayer(MidiJingleSequencer sequencer) {
             this.sequencer = sequencer;
             jNote = new JingleNoteManager();
-            toStop = new HashSet<String>();
-            toPlay = new HashSet<String>();
+            toStop = new HashSet<>();
+            toPlay = new HashSet<>();
             isPlaying = false;
             CraftBookPlugin.logDebugMessage("Constructing new player instance.", "ic-mc1270");
         }
@@ -239,13 +231,13 @@ public class Melody extends AbstractSelfTriggeredIC {
         }
 
         public boolean isValid() {
-            if(sequencer == null) return false;
-            if(!sequencer.isPlaying() && sequencer.hasPlayedBefore()) return false;
-            return true;
+            return sequencer != null && (sequencer.isPlaying() || !sequencer.hasPlayedBefore());
         }
     }
 
-    public static class Factory extends AbstractICFactory {
+    public static class Factory extends AbstractICFactory implements ConfigurableIC {
+
+        private boolean showPlayingMessage;
 
         public Factory(Server server) {
 
@@ -283,6 +275,11 @@ public class Melody extends AbstractSelfTriggeredIC {
                     "MIDI files are stored in the CraftBook MIDI folder, which is inside the 'plugins/CraftBook' folder. This folder is only generated when ICs are enabled, so if you are missing the folder that is why.",
                     "In the main plugin configuration, there is an option to enable percussion. Some percussion instruments will still be played when this is disabled, but the seperate percussion portion of the MIDI file will not be read."
             };
+        }
+
+        @Override
+        public void addConfiguration(YAMLProcessor config, String path) {
+            showPlayingMessage = config.getBoolean(path + "show-playing-message", true);
         }
 
         @Override

@@ -2,14 +2,14 @@ package com.sk89q.craftbook.bukkit.commands;
 import java.io.File;
 import java.io.IOException;
 
+import com.sk89q.craftbook.mechanics.headdrops.HeadDropsCommands;
+import com.sk89q.craftbook.util.ItemSyntax;
+import com.sk89q.minecraft.util.commands.CommandException;
 import org.bukkit.ChatColor;
-import org.bukkit.command.CommandException;
 import org.bukkit.command.CommandSender;
 
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.bukkit.ReportWriter;
-import com.sk89q.craftbook.bukkit.Updater;
-import com.sk89q.craftbook.bukkit.Updater.UpdateResult;
 import com.sk89q.craftbook.bukkit.util.BukkitUtil;
 import com.sk89q.craftbook.mechanics.area.AreaCommands;
 import com.sk89q.craftbook.mechanics.cauldron.CauldronCommands;
@@ -26,10 +26,8 @@ import com.sk89q.minecraft.util.commands.CommandContext;
 import com.sk89q.minecraft.util.commands.CommandPermissions;
 import com.sk89q.minecraft.util.commands.CommandPermissionsException;
 import com.sk89q.minecraft.util.commands.NestedCommand;
+import org.bukkit.entity.Player;
 
-/**
- * Author: Turtle9598
- */
 public class TopLevelCommands {
 
     public TopLevelCommands(CraftBookPlugin plugin) {
@@ -45,6 +43,11 @@ public class TopLevelCommands {
     @Command(aliases = {"area", "togglearea"}, desc = "Commands to manage Craftbook Areas")
     @NestedCommand(AreaCommands.class)
     public void area(CommandContext context, CommandSender sender) {
+    }
+
+    @Command(aliases = {"headdrops", "hd"}, desc = "Commands to manage Craftbook Head Drops")
+    @NestedCommand(HeadDropsCommands.class)
+    public void headdrops(CommandContext context, CommandSender sender) {
     }
 
     @Command(aliases = {"recp", "recps"}, desc = "Commands to manage Craftbook Custom Recipes")
@@ -100,47 +103,34 @@ public class TopLevelCommands {
             sender.sendMessage("The CraftBook config has been reloaded.");
         }
 
-        @Command(aliases = "update", desc = "Updates CraftBook.", flags = "c", max = 0)
-        @CommandPermissions("craftbook.update")
-        public void update(CommandContext context, CommandSender sender) {
-
-            if(!CraftBookPlugin.inst().getConfiguration().updateNotifier) {
-                sender.sendMessage("Functionality disabled!");
-                return;
-            }
-
-            if (context.hasFlag('c')) {
-
-                CraftBookPlugin.inst().checkForUpdates();
-                sender.sendMessage(CraftBookPlugin.inst().getLatestVersion() + " is the latest version available, and the updatability of it is: " + CraftBookPlugin.inst().isUpdateAvailable());
-            } else {
-
-                if(!CraftBookPlugin.inst().updateAvailable) {
-                    sender.sendMessage("No updates are available!");
-                    return;
-                }
-                Updater updater = new Updater(CraftBookPlugin.inst(), CraftBookPlugin.getUpdaterID(), CraftBookPlugin.inst().getFile(), Updater.UpdateType.DEFAULT, true);
-                if(updater.getResult() == UpdateResult.NO_UPDATE)
-                    sender.sendMessage("No updates are available!");
-                else {
-                    sender.sendMessage("Update found! Check console for download progress.");
-                }
-            }
-        }
-
         @Command(aliases = "about", desc = "Gives info about craftbook.")
         public void about(CommandContext context, CommandSender sender) {
 
             String ver = CraftBookPlugin.inst().getDescription().getVersion();
-            if(ver.split("-")[0].equalsIgnoreCase(CraftBookPlugin.getStableBuild()))
+            if(CraftBookPlugin.getVersion() != null) {
                 ver = CraftBookPlugin.getVersion();
+            }
             sender.sendMessage(ChatColor.YELLOW + "CraftBook version " + ver);
-            sender.sendMessage(ChatColor.YELLOW + "Founded by sk89q, and currently developed by me4502 & Dark_Arc");
+            sender.sendMessage(ChatColor.YELLOW + "Founded by sk89q, and currently developed by Me4502 & Dark_Arc");
+        }
+
+        @Command(aliases = {"iteminfo", "itemsyntax"}, desc = "Provides item syntax for held item.")
+        public void itemInfo(CommandContext context, CommandSender sender) throws CommandException {
+
+            if(!(sender instanceof Player)) {
+                throw new CommandException("Only players can use this command!");
+            }
+            if (((Player) sender).getInventory().getItemInMainHand() != null) {
+                sender.sendMessage(ChatColor.YELLOW + "Main hand: " + ItemSyntax.getStringFromItem(((Player) sender).getInventory().getItemInMainHand()));
+            }
+            if (((Player) sender).getInventory().getItemInOffHand() != null) {
+                sender.sendMessage(ChatColor.YELLOW + "Off hand: " + ItemSyntax.getStringFromItem(((Player) sender).getInventory().getItemInOffHand()));
+            }
         }
 
         @Command(aliases = {"report"}, desc = "Writes a report on CraftBook", flags = "pi", max = 0)
         @CommandPermissions({"craftbook.report"})
-        public void report(CommandContext args, final CommandSender sender) throws CommandPermissionsException {
+        public void report(CommandContext args, final CommandSender sender) throws CommandException {
 
             File dest = new File(CraftBookPlugin.inst().getDataFolder(), "report.txt");
             ReportWriter report = new ReportWriter(CraftBookPlugin.inst());

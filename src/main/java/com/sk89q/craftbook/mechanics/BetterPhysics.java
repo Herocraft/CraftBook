@@ -3,6 +3,7 @@ package com.sk89q.craftbook.mechanics;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -31,8 +32,7 @@ public class BetterPhysics extends AbstractCraftBookMechanic {
         if (!EventUtil.passesFilter(event))
             return;
 
-        if(FallingLadders.isValid(event.getBlock()))
-            Bukkit.getScheduler().runTask(CraftBookPlugin.inst(), new FallingLadders(event.getBlock()));
+        checkForPhysics(event.getBlock());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -40,8 +40,7 @@ public class BetterPhysics extends AbstractCraftBookMechanic {
 
         if (!EventUtil.passesFilter(event)) return;
 
-        if(FallingLadders.isValid(event.getBlock()))
-            Bukkit.getScheduler().runTask(CraftBookPlugin.inst(), new FallingLadders(event.getBlock()));
+        checkForPhysics(event.getBlock());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -50,15 +49,19 @@ public class BetterPhysics extends AbstractCraftBookMechanic {
         if (!EventUtil.passesFilter(event))
             return;
 
-        if(FallingLadders.isValid(event.getBlock()))
-            Bukkit.getScheduler().runTask(CraftBookPlugin.inst(), new FallingLadders(event.getBlock()));
+        checkForPhysics(event.getBlock());
+    }
+
+    private static void checkForPhysics(Block block) {
+        if(FallingLadders.isValid(block)) {
+            Bukkit.getScheduler().runTask(CraftBookPlugin.inst(), new FallingLadders(block));
+        }
     }
 
     private static class FallingLadders implements Runnable {
-        Block ladder;
+        private Block ladder;
 
         FallingLadders(Block ladder) {
-
             this.ladder = ladder;
         }
 
@@ -69,8 +72,10 @@ public class BetterPhysics extends AbstractCraftBookMechanic {
         @Override
         public void run () {
             if(!isValid(ladder)) return;
-            ladder.getWorld().spawnFallingBlock(ladder.getLocation(), ladder.getType(), ladder.getData());
-            ladder.setTypeId(Material.AIR.getId(), false);
+            ladder.getWorld().spawnFallingBlock(ladder.getLocation().add(0.5, 0, 0.5), ladder.getType(), ladder.getData());
+            ladder.setType(Material.AIR, false);
+
+            checkForPhysics(ladder.getRelative(BlockFace.UP));
         }
     }
 

@@ -2,7 +2,6 @@ package com.sk89q.craftbook.bukkit;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
@@ -29,7 +28,6 @@ public class BukkitConfiguration {
     public long signClickTimeout;
     public boolean convertNamesToCBID;
 
-    public boolean updateNotifier;
     public boolean easterEggs;
     public boolean realisticRandoms;
 
@@ -87,7 +85,7 @@ public class BukkitConfiguration {
         config.setComment("enabled-mechanics", "List of mechanics to enable! If they aren't in this list, the server won't load them!");
         enabledMechanics = config.getStringList("enabled-mechanics", Collections.singletonList("Variables"));
 
-        List<String> disabledMechanics = new ArrayList<String>();
+        List<String> disabledMechanics = new ArrayList<>();
 
         for(String mech : CraftBookPlugin.availableMechanics.keySet()) {
             if(!enabledMechanics.contains(mech))
@@ -99,9 +97,6 @@ public class BukkitConfiguration {
 
         config.setComment("st-think-ticks", "WARNING! Changing this can result in all ST mechanics acting very weirdly, only change this if you know what you are doing!");
         stThinkRate = config.getInt("st-think-ticks", 2);
-
-        config.setComment("notify-updates", "Enables the update notifier. This checks for updates on start, and notifies anyone with the permission when they join. They can then use /cb update to download the update.");
-        updateNotifier = config.getBoolean("notify-updates", true);
 
         config.setComment("safe-destruction", "Causes many mechanics to require sufficient blocks to function, for example gates, bridges and doors.");
         safeDestruction = config.getBoolean("safe-destruction", true);
@@ -143,7 +138,7 @@ public class BukkitConfiguration {
         debugLogToFile = config.getBoolean("debug-mode-file-logging", false);
 
         config.setComment("debug-flags", "Enable certain debug types when debug mode is enabled.");
-        debugFlags = config.getStringList("debug-flags", new ArrayList<String>());
+        debugFlags = config.getStringList("debug-flags", new ArrayList<>());
 
         config.setComment("easter-eggs", "Enables random easter eggs. Can be from console messages on startup for a special occasion, to funny little effects with IC's and other mechanics (Always harmless, won't mess anything up)");
         easterEggs = config.getBoolean("easter-eggs", true);
@@ -167,7 +162,7 @@ public class BukkitConfiguration {
 
         config.setProperty("enabled-mechanics", enabledMechanics);
 
-        List<String> disabledMechanics = new ArrayList<String>();
+        List<String> disabledMechanics = new ArrayList<>();
 
         for(String mech : CraftBookPlugin.availableMechanics.keySet()) {
             if(!enabledMechanics.contains(mech))

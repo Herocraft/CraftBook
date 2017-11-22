@@ -8,6 +8,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.*;
 import org.bukkit.material.MaterialData;
@@ -17,6 +18,7 @@ import org.bukkit.potion.PotionEffectType;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
@@ -71,6 +73,20 @@ public final class ItemSyntax {
                     builder.append('|').append(s);
             }
             ItemMeta meta = item.getItemMeta();
+
+            if (meta.isUnbreakable()) {
+                builder.append("/unbreakable:true");
+            }
+            List<String> flags = new ArrayList<>();
+            for (ItemFlag flag : ItemFlag.values()) {
+                if (meta.hasItemFlag(flag)) {
+                    flags.add(flag.name());
+                }
+            }
+            if (!flags.isEmpty()) {
+                builder.append("/flags:").append(StringUtils.join(flags, ","));
+            }
+
             if (meta instanceof SkullMeta) {
                 if(((SkullMeta) meta).hasOwner())
                     builder.append("/player:").append(((SkullMeta) meta).getOwner());
@@ -109,10 +125,10 @@ public final class ItemSyntax {
             int amount = 1;
 
             String[] advMetadataSplit = FSLASH_PATTERN.split(line);
-            String[] nameLoreSplit = PIPE_PATTERN.split(advMetadataSplit[0]);
-            String[] enchantSplit = SEMICOLON_PATTERN.split(nameLoreSplit[0]);
-            String[] amountSplit = ASTERISK_PATTERN.split(enchantSplit[0], 2);
-            String[] dataSplit = COLON_PATTERN.split(amountSplit[0], 2);
+            String[] nameLoreSplit = PIPE_PATTERN.split(advMetadataSplit[0].replace("\\/", "/"));
+            String[] enchantSplit = SEMICOLON_PATTERN.split(nameLoreSplit[0].replace("\\;", ";"));
+            String[] amountSplit = ASTERISK_PATTERN.split(enchantSplit[0].replace("\\*", "*"), 2);
+            String[] dataSplit = COLON_PATTERN.split(amountSplit[0].replace("\\:", ":"), 2);
 
             try {
                 material = Material.getMaterial(Integer.parseInt(dataSplit[0]));
@@ -154,7 +170,7 @@ public final class ItemSyntax {
                 meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', nameLoreSplit[1]));
                 if(nameLoreSplit.length > 2) {
 
-                    List<String> lore = new ArrayList<String>();
+                    List<String> lore = new ArrayList<>();
                     for(int i = 2; i < nameLoreSplit.length; i++)
                         lore.add(ChatColor.translateAlternateColorCodes('&', nameLoreSplit[i]));
 
@@ -174,8 +190,7 @@ public final class ItemSyntax {
                             ench = Enchantment.getById(Integer.parseInt(sp[0]));
                         rVal.addUnsafeEnchantment(ench, Integer.parseInt(sp[1]));
                     }
-                    catch(NumberFormatException ignored){}
-                    catch(ArrayIndexOutOfBoundsException ignored){}
+                    catch(NumberFormatException | ArrayIndexOutOfBoundsException | NullPointerException ignored){}
                 }
             }
             if(advMetadataSplit.length > 1) {
@@ -197,11 +212,9 @@ public final class ItemSyntax {
                     else if(bits[0].equalsIgnoreCase("page") && meta instanceof BookMeta)
                         ((BookMeta) meta).addPage(bits[1]);
                     else if(bits[0].equalsIgnoreCase("color") && meta instanceof LeatherArmorMeta) {
-
                         String[] cols = COMMA_PATTERN.split(bits[1]);
                         ((LeatherArmorMeta) meta).setColor(org.bukkit.Color.fromRGB(Integer.parseInt(cols[0]),Integer.parseInt(cols[1]),Integer.parseInt(cols[2])));
                     } else if(bits[0].equalsIgnoreCase("potion") && meta instanceof PotionMeta) {
-
                         String[] effects = SEMICOLON_PATTERN.split(bits[1]);
                         try {
                             PotionEffect effect = new PotionEffect(PotionEffectType.getByName(effects[0]), Integer.parseInt(effects[1]), Integer.parseInt(effects[2]));
@@ -215,6 +228,14 @@ public final class ItemSyntax {
                                 ench = Enchantment.getById(Integer.parseInt(sp[0]));
                             ((EnchantmentStorageMeta) meta).addStoredEnchant(ench, Integer.parseInt(sp[1]), true);
                         } catch(Exception ignored){}
+                    } else if (bits[0].equalsIgnoreCase("unbreakable")) {
+                        boolean unbreakable = Boolean.parseBoolean(bits[1]);
+                        meta.setUnbreakable(unbreakable);
+                    } else if (bits[0].equalsIgnoreCase("flags")) {
+                        List<String> flags = Arrays.asList(COMMA_PATTERN.split(bits[1]));
+                        for (String flag : flags) {
+                            meta.addItemFlags(ItemFlag.valueOf(flag));
+                        }
                     }
                 }
                 rVal.setItemMeta(meta);
@@ -240,19 +261,7 @@ public final class ItemSyntax {
         if(plugin != null) {
             try {
                 line = (String) plugin.getClass().getMethod("parseItemSyntax", String.class).invoke(plugin, line);
-            } catch (NoSuchMethodException e) {
-                plugin = null;
-                e.printStackTrace();
-            } catch (SecurityException e) {
-                plugin = null;
-                e.printStackTrace();
-            } catch (IllegalAccessException e) {
-                plugin = null;
-                e.printStackTrace();
-            } catch (IllegalArgumentException e) {
-                plugin = null;
-                e.printStackTrace();
-            } catch (InvocationTargetException e) {
+            } catch (NoSuchMethodException | InvocationTargetException | IllegalArgumentException | IllegalAccessException | SecurityException e) {
                 plugin = null;
                 e.printStackTrace();
             }

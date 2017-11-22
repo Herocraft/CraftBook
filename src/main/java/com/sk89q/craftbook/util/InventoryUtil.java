@@ -9,10 +9,13 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.BrewingStand;
 import org.bukkit.block.Furnace;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.BrewerInventory;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 
 /**
  * Class for utilities that include adding items to a furnace based on if it is a fuel or not, and adding items to a chest. Also will include methdos for checking contents and removing.
@@ -27,15 +30,26 @@ public class InventoryUtil {
      * @return The stacks that could not be added.
      */
     public static ArrayList<ItemStack> addItemsToInventory(InventoryHolder container, ItemStack ... stacks) {
+        return addItemsToInventory(container, true, stacks);
+    }
+
+    /**
+     * Adds items to an inventory, returning the leftovers.
+     *
+     * @param container The InventoryHolder to add the items to.
+     * @param stacks The stacks to add to the inventory.
+     * @return The stacks that could not be added.
+     */
+    public static ArrayList<ItemStack> addItemsToInventory(InventoryHolder container, boolean update, ItemStack ... stacks) {
 
         if(container instanceof Furnace) {
             return addItemsToFurnace((Furnace) container, stacks);
         } else if(container instanceof BrewingStand) {
             return addItemsToBrewingStand((BrewingStand) container, stacks);
         } else { //Basic inventories like chests, dispensers, storage carts, etc.
-            ArrayList<ItemStack> leftovers = new ArrayList<ItemStack>(container.getInventory().addItem(stacks).values());
-            if(container instanceof BlockState)
-                ((BlockState) container).update();
+            ArrayList<ItemStack> leftovers = new ArrayList<>(container.getInventory().addItem(stacks).values());
+            //if(container instanceof BlockState && update)
+            //    ((BlockState) container).update();
             return leftovers;
         }
     }
@@ -49,7 +63,7 @@ public class InventoryUtil {
      */
     public static ArrayList<ItemStack> addItemsToFurnace(Furnace furnace, ItemStack ... stacks) {
 
-        ArrayList<ItemStack> leftovers = new ArrayList<ItemStack>();
+        ArrayList<ItemStack> leftovers = new ArrayList<>();
 
         for(ItemStack stack : stacks) {
 
@@ -72,7 +86,7 @@ public class InventoryUtil {
         }
         leftovers.removeAll(Collections.singleton(null));
 
-        furnace.update();
+        //furnace.update();
 
         return leftovers;
     }
@@ -86,7 +100,7 @@ public class InventoryUtil {
      */
     public static ArrayList<ItemStack> addItemsToBrewingStand(BrewingStand brewingStand, ItemStack ... stacks) {
 
-        ArrayList<ItemStack> leftovers = new ArrayList<ItemStack>();
+        ArrayList<ItemStack> leftovers = new ArrayList<>();
 
         for(ItemStack stack : stacks) {
 
@@ -106,7 +120,7 @@ public class InventoryUtil {
             }
         }
 
-        brewingStand.update();
+        //brewingStand.update();
 
         return leftovers;
     }
@@ -121,18 +135,22 @@ public class InventoryUtil {
      */
     public static boolean doesInventoryContain(Inventory inv, boolean exact, ItemStack ... stacks) {
 
-        ArrayList<ItemStack> itemsToFind = new ArrayList<ItemStack>(Arrays.asList(stacks));
+        ArrayList<ItemStack> itemsToFind = new ArrayList<>(Arrays.asList(stacks));
 
         if(itemsToFind.isEmpty())
             return true;
 
-        for (ItemStack item : inv.getContents()) {
+        List<ItemStack> items = new ArrayList<>(Arrays.asList(inv.getContents()));
+        if (inv instanceof PlayerInventory) {
+            items.addAll(Arrays.asList(((PlayerInventory) inv).getArmorContents()));
+            items.add(((PlayerInventory) inv).getItemInOffHand());
+        }
 
+        for (ItemStack item : inv.getContents()) {
             if(!ItemUtil.isStackValid(item))
                 continue;
 
             for(ItemStack base : stacks) {
-
                 if(!itemsToFind.contains(base))
                     continue;
 
@@ -142,7 +160,6 @@ public class InventoryUtil {
                 }
 
                 if(ItemUtil.areItemsIdentical(base, item)) {
-
                     if(exact && base.getAmount() != item.getAmount())
                         continue;
 
@@ -164,19 +181,17 @@ public class InventoryUtil {
      */
     public static boolean removeItemsFromInventory(InventoryHolder inv, ItemStack ... stacks) {
 
-        List<ItemStack> leftovers = new ArrayList<ItemStack>(inv.getInventory().removeItem(stacks).values());
+        List<ItemStack> leftovers = new ArrayList<>(inv.getInventory().removeItem(stacks).values());
 
         if(!leftovers.isEmpty()) {
-            List<ItemStack> itemsToAdd = new ArrayList<ItemStack>(Arrays.asList(stacks));
-            for(ItemStack left : leftovers) {
-                itemsToAdd.remove(left);
-            }
+            List<ItemStack> itemsToAdd = new ArrayList<>(Arrays.asList(stacks));
+            itemsToAdd.removeAll(leftovers);
 
             inv.getInventory().addItem(itemsToAdd.toArray(new ItemStack[itemsToAdd.size()]));
         }
 
-        if(inv instanceof BlockState)
-            ((BlockState) inv).update();
+        //if(inv instanceof BlockState)
+        //    ((BlockState) inv).update();
 
         return leftovers.isEmpty();
     }
@@ -207,10 +222,45 @@ public class InventoryUtil {
             case DROPPER:
             case DISPENSER:
             case FURNACE:
+            case BURNING_FURNACE:
             case BREWING_STAND:
+            case WHITE_SHULKER_BOX:
+            case ORANGE_SHULKER_BOX:
+            case MAGENTA_SHULKER_BOX:
+            case LIGHT_BLUE_SHULKER_BOX:
+            case YELLOW_SHULKER_BOX:
+            case GREEN_SHULKER_BOX:
+            case PINK_SHULKER_BOX:
+            case GRAY_SHULKER_BOX:
+            case SILVER_SHULKER_BOX:
+            case BLUE_SHULKER_BOX:
+            case PURPLE_SHULKER_BOX:
+            case CYAN_SHULKER_BOX:
+            case BROWN_SHULKER_BOX:
+            case LIME_SHULKER_BOX:
+            case BLACK_SHULKER_BOX:
+            case RED_SHULKER_BOX:
                 return true;
             default:
                 return false;
+        }
+    }
+
+    public static ItemStack getItemInHand(Player player, EquipmentSlot slot) {
+        if (slot == EquipmentSlot.HAND) {
+            return player.getInventory().getItemInMainHand();
+        } else if (slot == EquipmentSlot.OFF_HAND) {
+            return player.getInventory().getItemInOffHand();
+        }
+
+        return null;
+    }
+
+    public static void setItemInHand(Player player, EquipmentSlot slot, ItemStack itemStack) {
+        if (slot == EquipmentSlot.HAND) {
+            player.getInventory().setItemInMainHand(itemStack);
+        } else if (slot == EquipmentSlot.OFF_HAND) {
+            player.getInventory().setItemInOffHand(itemStack);
         }
     }
 }

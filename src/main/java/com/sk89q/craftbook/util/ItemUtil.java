@@ -10,6 +10,7 @@ import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.*;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.material.MaterialData;
 
 import java.util.ArrayList;
@@ -53,7 +54,7 @@ public final class ItemUtil {
      */
     public static List<ItemStack> filterItems(List<ItemStack> stacks, HashSet<ItemStack> inclusions, HashSet<ItemStack> exclusions) {
 
-        List<ItemStack> ret = new ArrayList<ItemStack>();
+        List<ItemStack> ret = new ArrayList<>();
 
         for(ItemStack stack : stacks) {
 
@@ -150,14 +151,14 @@ public final class ItemUtil {
                 ShapedRecipe recipe2 = (ShapedRecipe) rec2;
                 if(recipe1.getShape().length == recipe2.getShape().length) {
                     CraftBookPlugin.logDebugMessage("Same size!", "advanced-data.compare-recipes.shaped");
-                    List<ItemStack> stacks1 = new ArrayList<ItemStack>();
+                    List<ItemStack> stacks1 = new ArrayList<>();
 
                     for(String s : recipe1.getShape())
                         for(char c : s.toCharArray())
                             for(Entry<Character, ItemStack> entry : recipe1.getIngredientMap().entrySet())
                                 if(entry.getKey() == c)
                                     stacks1.add(entry.getValue());
-                    List<ItemStack> stacks2 = new ArrayList<ItemStack>();
+                    List<ItemStack> stacks2 = new ArrayList<>();
 
                     for(String s : recipe2.getShape())
                         for(char c : s.toCharArray())
@@ -169,7 +170,7 @@ public final class ItemUtil {
                         CraftBookPlugin.logDebugMessage("Recipes have different amounts of ingredients!", "advanced-data.compare-recipes.shaped");
                         return false;
                     }
-                    List<ItemStack> test = new ArrayList<ItemStack>(stacks1);
+                    List<ItemStack> test = new ArrayList<>(stacks1);
                     if(test.size() == 0) {
                         CraftBookPlugin.logDebugMessage("Recipes are the same!", "advanced-data.compare-recipes.shaped");
                         return true;
@@ -196,12 +197,12 @@ public final class ItemUtil {
 
                 CraftBookPlugin.logDebugMessage("Same Size!", "advanced-data.compare-recipes.shapeless");
 
-                List<ItemStack> test = new ArrayList<ItemStack>(VerifyUtil.withoutNulls(recipe1.getIngredientList()));
+                List<ItemStack> test = new ArrayList<>(VerifyUtil.withoutNulls(recipe1.getIngredientList()));
                 if(test.size() == 0) {
                     CraftBookPlugin.logDebugMessage("Recipes are the same!", "advanced-data.compare-recipes.shapeless");
                     return true;
                 }
-                if(!test.removeAll(VerifyUtil.<ItemStack>withoutNulls(recipe2.getIngredientList())) && test.size() > 0) {
+                if(!test.removeAll(VerifyUtil.withoutNulls(recipe2.getIngredientList())) && test.size() > 0) {
                     CraftBookPlugin.logDebugMessage("Recipes are NOT the same!", "advanced-data.compare-recipes.shapeless");
                     return false;
                 }
@@ -261,17 +262,17 @@ public final class ItemUtil {
 
         if(checkLore) {
             //Lore
-            List<String> lore1 = new ArrayList<String>();
-            if (meta.hasLore())
+            List<String> lore1 = new ArrayList<>();
+            if(meta.hasLore())
                 for (String lore : meta.getLore())
                     lore1.add(ChatColor.translateAlternateColorCodes('&', stripResetChar(lore.trim())));
 
-            List<String> lore2 = new ArrayList<String>();
-            if (meta2.hasLore())
+            List<String> lore2 = new ArrayList<>();
+            if(meta2.hasLore())
                 for (String lore : meta2.getLore())
                     lore2.add(ChatColor.translateAlternateColorCodes('&', stripResetChar(lore.trim())));
 
-            if (lore1.size() != lore2.size())
+            if(lore1.size() != lore2.size())
                 return false;
             CraftBookPlugin.logDebugMessage("Has same lore lengths", "item-checks.meta.lores");
 
@@ -286,12 +287,12 @@ public final class ItemUtil {
 
         if(checkEnchants) {
             //Enchants
-            List<Enchantment> ench1 = new ArrayList<Enchantment>();
-            if (meta.hasEnchants())
+            List<Enchantment> ench1 = new ArrayList<>();
+            if(meta.hasEnchants())
                 ench1.addAll(meta.getEnchants().keySet());
 
-            List<Enchantment> ench2 = new ArrayList<Enchantment>();
-            if (meta2.hasEnchants())
+            List<Enchantment> ench2 = new ArrayList<>();
+            if(meta2.hasEnchants())
                 ench2.addAll(meta2.getEnchants().keySet());
 
             if (ench1.size() != ench2.size())
@@ -308,6 +309,36 @@ public final class ItemUtil {
             CraftBookPlugin.logDebugMessage("Enchants are the same", "item-checks.meta.enchants");
         }
 
+        //StoredEnchants
+        if (meta instanceof EnchantmentStorageMeta) {
+            if (!(meta2 instanceof EnchantmentStorageMeta))
+                return false; // meta type mismatch
+
+            EnchantmentStorageMeta storageMeta = (EnchantmentStorageMeta) meta;
+            List<Enchantment> storedEnchantments = new ArrayList<>();
+            if (storageMeta.hasStoredEnchants())
+                storedEnchantments.addAll(storageMeta.getStoredEnchants().keySet());
+
+            EnchantmentStorageMeta storageMeta2 = (EnchantmentStorageMeta) meta2;
+            List<Enchantment> storedEnchantments2 = new ArrayList<>();
+            if (storageMeta2.hasStoredEnchants())
+                storedEnchantments2.addAll(storageMeta2.getStoredEnchants().keySet());
+
+            if (storedEnchantments.size() != storedEnchantments2.size())
+                return false; // mismatch enchantment counts
+            CraftBookPlugin.logDebugMessage("Has same stored enchantment lengths", "item-checks.meta.enchants");
+
+            for (Enchantment ench : storedEnchantments) {
+                if (!storedEnchantments2.contains(ench))
+                    return false; // mismatch stored enchantments
+                if (storageMeta.getStoredEnchantLevel(ench) != storageMeta2.getStoredEnchantLevel(ench))
+                    return false; // mismatch stored enchantment levels
+            }
+
+            CraftBookPlugin.logDebugMessage("Stored enchants are the same", "item-checks.meta.enchants");
+        } else if (meta2 instanceof EnchantmentStorageMeta)
+            return false; // meta type mismatch
+
         return true;
     }
 
@@ -318,7 +349,7 @@ public final class ItemUtil {
     public static boolean areItemsIdentical(ItemStack item, ItemStack item2, boolean namelessWildcard, boolean checkLore, boolean checkEnchants) {
 
         if(!isStackValid(item) || !isStackValid(item2)) {
-            CraftBookPlugin.logDebugMessage("An invalid item was compared", "item-checks");
+            CraftBookPlugin.logDebugMessage("An invalid item was compared. Was first? " + isStackValid(item), "item-checks");
             return !isStackValid(item) && !isStackValid(item2);
         }
         else {
@@ -373,8 +404,17 @@ public final class ItemUtil {
     }
 
     public static boolean isStackValid(ItemStack item) {
-
-        return item != null && item.getAmount() > 0 && item.getTypeId() > 0 && (getMaxDurability(item.getType()) == 0 || item.getDurability() < getMaxDurability(item.getType()));
+        if (item == null) {
+            CraftBookPlugin.logDebugMessage("item-checks", "Item is null.");
+            return false;
+        } else if (item.getAmount() <= 0) {
+            CraftBookPlugin.logDebugMessage("item-checks", "Item has amount of " + item.getAmount());
+            return false;
+        } else if (item.getTypeId() <= 0) {
+            CraftBookPlugin.logDebugMessage("item-checks", "Item has type ID of " + item.getTypeId());
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -475,6 +515,73 @@ public final class ItemUtil {
                 return new ItemStack(Material.HARD_CLAY);
             case QUARTZ_ORE:
                 return new ItemStack(Material.QUARTZ);
+            case SMOOTH_BRICK:
+                return new ItemStack(Material.SMOOTH_BRICK, 1, (short) 2);
+            case SPONGE:
+                if (item.getData().getData() == 0)
+                    return null;
+                else return new ItemStack(Material.SPONGE);
+            case STAINED_CLAY:
+                switch(item.getData().getData()) {
+                    case 0:
+                        return new ItemStack(Material.WHITE_GLAZED_TERRACOTTA);
+                    case 1:
+                        return new ItemStack(Material.ORANGE_GLAZED_TERRACOTTA);
+                    case 2:
+                        return new ItemStack(Material.MAGENTA_GLAZED_TERRACOTTA);
+                    case 3:
+                        return new ItemStack(Material.LIGHT_BLUE_GLAZED_TERRACOTTA);
+                    case 4:
+                        return new ItemStack(Material.YELLOW_GLAZED_TERRACOTTA);
+                    case 5:
+                        return new ItemStack(Material.LIME_GLAZED_TERRACOTTA);
+                    case 6:
+                        return new ItemStack(Material.PINK_GLAZED_TERRACOTTA);
+                    case 7:
+                        return new ItemStack(Material.GRAY_GLAZED_TERRACOTTA);
+                    case 8:
+                        return new ItemStack(Material.SILVER_GLAZED_TERRACOTTA);
+                    case 9:
+                        return new ItemStack(Material.CYAN_GLAZED_TERRACOTTA);
+                    case 10:
+                        return new ItemStack(Material.PURPLE_GLAZED_TERRACOTTA);
+                    case 11:
+                        return new ItemStack(Material.BLUE_GLAZED_TERRACOTTA);
+                    case 12:
+                        return new ItemStack(Material.BROWN_GLAZED_TERRACOTTA);
+                    case 13:
+                        return new ItemStack(Material.GREEN_GLAZED_TERRACOTTA);
+                    case 14:
+                        return new ItemStack(Material.RED_GLAZED_TERRACOTTA);
+                    case 15:
+                        return new ItemStack(Material.BLACK_GLAZED_TERRACOTTA);
+                }
+            case IRON_SWORD:
+            case IRON_PICKAXE:
+            case IRON_AXE:
+            case IRON_SPADE:
+            case IRON_HOE:
+            case CHAINMAIL_HELMET:
+            case CHAINMAIL_CHESTPLATE:
+            case CHAINMAIL_LEGGINGS:
+            case CHAINMAIL_BOOTS:
+            case IRON_HELMET:
+            case IRON_CHESTPLATE:
+            case IRON_LEGGINGS:
+            case IRON_BOOTS:
+            case IRON_BARDING:
+                return new ItemStack(Material.IRON_NUGGET);
+            case GOLD_SWORD:
+            case GOLD_PICKAXE:
+            case GOLD_AXE:
+            case GOLD_SPADE:
+            case GOLD_HOE:
+            case GOLD_HELMET:
+            case GOLD_CHESTPLATE:
+            case GOLD_LEGGINGS:
+            case GOLD_BOOTS:
+            case GOLD_BARDING:
+                return new ItemStack(Material.GOLD_NUGGET);
             default:
                 return null;
         }
@@ -519,6 +626,41 @@ public final class ItemUtil {
             case BLAZE_ROD:
             case LAVA_BUCKET:
             case BOOKSHELF:
+            case WOOL:                
+            case SPRUCE_WOOD_STAIRS:
+            case JUNGLE_WOOD_STAIRS:
+            case BIRCH_WOOD_STAIRS:
+            case ACACIA_STAIRS:
+            case DARK_OAK_STAIRS:
+            case SPRUCE_FENCE:
+            case JUNGLE_FENCE:
+            case BIRCH_FENCE:
+            case ACACIA_FENCE:
+            case DARK_OAK_FENCE:
+            case SPRUCE_FENCE_GATE:
+            case JUNGLE_FENCE_GATE:
+            case BIRCH_FENCE_GATE:
+            case ACACIA_FENCE_GATE:
+            case DARK_OAK_FENCE_GATE:
+            case WOOD_DOOR:
+            case SPRUCE_DOOR_ITEM:
+            case JUNGLE_DOOR_ITEM:
+            case BIRCH_DOOR_ITEM:
+            case ACACIA_DOOR_ITEM:
+            case DARK_OAK_DOOR_ITEM:
+            case CARPET:
+            case SIGN:
+            case WOOD_BUTTON:
+            case FISHING_ROD:
+            case BOW:
+            case LADDER:
+            case BANNER:
+            case BOAT:
+            case BOAT_ACACIA:
+            case BOAT_BIRCH:
+            case BOAT_DARK_OAK:
+            case BOAT_JUNGLE:
+            case BOAT_SPRUCE:              
                 return true;
             default:
                 return false;
@@ -560,7 +702,7 @@ public final class ItemUtil {
 
     public static List<ItemStack> getRawFood(Inventory inv) {
 
-        List<ItemStack> ret = new ArrayList<ItemStack>();
+        List<ItemStack> ret = new ArrayList<>();
 
         for (ItemStack it : inv.getContents()) {
             if (isStackValid(it) && isCookable(it))
@@ -580,7 +722,7 @@ public final class ItemUtil {
 
     public static List<ItemStack> getRawMinerals(Inventory inv) {
 
-        List<ItemStack> ret = new ArrayList<ItemStack>();
+        List<ItemStack> ret = new ArrayList<>();
 
         for (ItemStack it : inv.getContents()) {
             if (isStackValid(it) && isSmeltable(it))
@@ -600,7 +742,7 @@ public final class ItemUtil {
 
     public static List<ItemStack> getRawMaterials(Inventory inv) {
 
-        List<ItemStack> ret = new ArrayList<ItemStack>();
+        List<ItemStack> ret = new ArrayList<>();
 
         for (ItemStack it : inv.getContents()) {
             if (isStackValid(it) && isFurnacable(it))
@@ -658,16 +800,16 @@ public final class ItemUtil {
     public static ItemStack makeItemValid(ItemStack invalid) {
 
         if(invalid == null)
-            return null;
+            return new ItemStack(Material.STONE);
 
         ItemStack valid = invalid.clone();
 
         if(valid.getDurability() < 0)
             valid.setDurability((short) 0);
-        if(valid.getData().getData() < 0)
-            valid.getData().setData((byte) 0);
         if(valid.getType() == null || valid.getType() == Material.PISTON_MOVING_PIECE)
             valid.setType(Material.STONE);
+        if(valid.getData().getData() < 0)
+            valid.setData(new MaterialData(valid.getType().getId(), (byte) 0));
         if(valid.getAmount() < 1)
             valid.setAmount(1);
 
@@ -682,7 +824,7 @@ public final class ItemUtil {
      */
     public static List<Item> getItemsAtBlock(Block block) {
 
-        List<Item> items = new ArrayList<Item>();
+        List<Item> items = new ArrayList<>();
 
         for (Entity en : block.getChunk().getEntities()) {
             if (!(en instanceof Item)) {
@@ -708,9 +850,7 @@ public final class ItemUtil {
      * @return
      */
     public static short getMaxDurability(Material type) {
-
         switch(type) {
-
             case DIAMOND_AXE:
             case DIAMOND_HOE:
             case DIAMOND_PICKAXE:
@@ -741,8 +881,15 @@ public final class ItemUtil {
             case GOLD_SPADE:
             case GOLD_SWORD:
                 return 33;
+            case SHEARS:
+                return 238;
+            case FLINT_AND_STEEL:
+            case FISHING_ROD:
+                return 65;
+            case SHIELD:
+                return 337;
             default:
-                return 0;
+                return type.getMaxDurability();
         }
     }
 

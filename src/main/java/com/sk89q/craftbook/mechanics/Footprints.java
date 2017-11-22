@@ -31,6 +31,9 @@ public class Footprints extends AbstractCraftBookMechanic {
         if(event.getFrom().getX() == event.getTo().getX() && event.getFrom().getZ() == event.getTo().getZ())
             return;
 
+        if(!event.getPlayer().hasPermission("craftbook.mech.footprints.use"))
+            return;
+
         Block below = event.getPlayer().getLocation().subtract(0, 1, 0).getBlock(); //Gets the block they're standing on
         double yOffset = 0.07D;
 
@@ -49,9 +52,6 @@ public class Footprints extends AbstractCraftBookMechanic {
             if(footsteps.contains(event.getPlayer().getName()))
                 return;
 
-            if(!event.getPlayer().hasPermission("craftbook.mech.footprints.use"))
-                return;
-
             try {
                 for (Player play : CraftBookPlugin.inst().getServer().getOnlinePlayers()) {
                     if(!play.canSee(event.getPlayer()))
@@ -64,13 +64,8 @@ public class Footprints extends AbstractCraftBookMechanic {
                 }
 
                 footsteps.add(event.getPlayer().getName());
-                CraftBookPlugin.inst().getServer().getScheduler().runTaskLater(CraftBookPlugin.inst(), new Runnable() {
-
-                    @Override
-                    public void run () {
-                        footsteps.remove(event.getPlayer().getName());
-                    }
-                }, event.getPlayer().isSprinting() ? 7 : 10);
+                CraftBookPlugin.inst().getServer().getScheduler().runTaskLater(CraftBookPlugin.inst(),
+                        () -> footsteps.remove(event.getPlayer().getName()), event.getPlayer().isSprinting() ? 7 : 10);
             } catch (Throwable e) {
                 CraftBookPlugin.logger().log(Level.WARNING, "Failed to send footprints for " + event.getPlayer().getName(), e);
             }
@@ -80,7 +75,7 @@ public class Footprints extends AbstractCraftBookMechanic {
     @Override
     public boolean enable () {
 
-        footsteps = new HashSet<String>();
+        footsteps = new HashSet<>();
         return true;
     }
 

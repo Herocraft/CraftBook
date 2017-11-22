@@ -48,18 +48,20 @@ public final class LocationUtil {
     }
 
     public static Entity[] getNearbyEntities(Location l, Vector radius) {
-
         int chunkRadiusX = radius.getBlockX() < 16 ? 1 : radius.getBlockX() / 16;
         int chunkRadiusZ = radius.getBlockZ() < 16 ? 1 : radius.getBlockZ() / 16;
-        HashSet<Entity> radiusEntities = new HashSet<Entity>();
+        HashSet<Entity> radiusEntities = new HashSet<>();
         for (int chX = 0 - chunkRadiusX; chX <= chunkRadiusX; chX++) {
             for (int chZ = 0 - chunkRadiusZ; chZ <= chunkRadiusZ; chZ++) {
-                int x = (int) l.getX(), y = (int) l.getY(), z = (int) l.getZ();
-                for (Entity e : new Location(l.getWorld(), x + chX * 16, y, z + chZ * 16).getChunk().getEntities()) {
-                    if(e == null || e.isDead() || !e.isValid())
-                        continue;
-                    if(isWithinRadius(l,e.getLocation(),radius))
-                        radiusEntities.add(e);
+                int offChunkX = l.getChunk().getX() + chX;
+                int offChunkZ = l.getChunk().getZ() + chZ;
+                if (l.getWorld().isChunkLoaded(offChunkX, offChunkZ)) {
+                    for (Entity e : l.getWorld().getChunkAt(offChunkX, offChunkZ).getEntities()) {
+                        if (e == null || e.isDead() || !e.isValid())
+                            continue;
+                        if (isWithinRadius(l, e.getLocation(), radius))
+                            radiusEntities.add(e);
+                    }
                 }
             }
         }
@@ -253,7 +255,7 @@ public final class LocationUtil {
     public static Player[] getNearbyPlayers(Location l, int radius) {
 
         int chunkRadius = radius < 16 ? 1 : radius / 16;
-        HashSet<Player> radiusEntities = new HashSet<Player>();
+        HashSet<Player> radiusEntities = new HashSet<>();
         for (int chX = 0 - chunkRadius; chX <= chunkRadius; chX++) {
             for (int chZ = 0 - chunkRadius; chZ <= chunkRadius; chZ++) {
                 int x = (int) l.getX(), y = (int) l.getY(), z = (int) l.getZ();

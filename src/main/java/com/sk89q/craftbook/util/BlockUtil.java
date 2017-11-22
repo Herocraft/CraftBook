@@ -88,7 +88,7 @@ public final class BlockUtil {
      */
     public static ItemStack[] getBlockDrops(Block block, ItemStack tool) {
 
-        List<ItemStack> drops = new ArrayList<ItemStack>();
+        List<ItemStack> drops = new ArrayList<>();
 
         switch(block.getType()) {
             case SNOW:
@@ -96,11 +96,18 @@ public final class BlockUtil {
                 if(tool.getType() == Material.WOOD_SPADE || tool.getType() == Material.STONE_SPADE || tool.getType() == Material.IRON_SPADE || tool.getType() == Material.GOLD_SPADE || tool.getType() == Material.DIAMOND_SPADE)
                     drops.add(new ItemStack(Material.SNOW_BALL, block.getData() + 1));
                 break;
-            case CROPS:
+            case CROPS: {
                 drops.add(new ItemStack(Material.WHEAT, 1));
                 int amount = CraftBookPlugin.inst().getRandom().nextInt(4);
-                if(amount > 0)
+                if (amount > 0)
                     drops.add(new ItemStack(Material.SEEDS, amount));
+                break;
+            }
+            case BEETROOT_BLOCK:
+                drops.add(new ItemStack(Material.BEETROOT, 1));
+                int amount = CraftBookPlugin.inst().getRandom().nextInt(4);
+                if(amount > 0)
+                    drops.add(new ItemStack(Material.BEETROOT_SEEDS, amount));
                 break;
             case CARROT:
                 drops.add(new ItemStack(Material.CARROT_ITEM, 1 + CraftBookPlugin.inst().getRandom().nextInt(4)));
@@ -123,7 +130,7 @@ public final class BlockUtil {
                 drops.add(new ItemStack(Material.INK_SACK, 3, (short) 3));
                 break;
             default:
-                if(tool == null)
+                if(tool == null || ItemUtil.getMaxDurability(tool.getType()) > 0)
                     drops.addAll(block.getDrops());
                 else
                     drops.addAll(block.getDrops(tool));
@@ -135,7 +142,7 @@ public final class BlockUtil {
 
     public static Block[] getTouchingBlocks(Block block) {
 
-        List<Block> blocks = new ArrayList<Block>();
+        List<Block> blocks = new ArrayList<>();
         for(BlockFace face : LocationUtil.getDirectFaces())
             blocks.add(block.getRelative(face));
 
@@ -144,7 +151,7 @@ public final class BlockUtil {
 
     public static Block[] getIndirectlyTouchingBlocks(Block block) {
 
-        List<Block> blocks = new ArrayList<Block>();
+        List<Block> blocks = new ArrayList<>();
         for(int x = -1; x < 2; x++)
             for(int y = -1; y < 2; y++)
                 for(int z = -1; z < 2; z++)

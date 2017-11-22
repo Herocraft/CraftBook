@@ -270,8 +270,7 @@ public final class ICUtil {
 
         try {
             offsets = parseUnsafeBlockLocation(line);
-        } catch (NumberFormatException ignored) {
-        } catch (ArrayIndexOutOfBoundsException ignored) {
+        } catch (NumberFormatException | ArrayIndexOutOfBoundsException ignored) {
         }
 
         if(offsets.getBlockX() == 0 && offsets.getBlockY() == 0 && offsets.getBlockZ() == 0)
@@ -378,10 +377,8 @@ public final class ICUtil {
         Block pipe = backB.getRelative(back);
 
         // Handle the event
-        PipeRequestEvent event = new PipeRequestEvent(pipe, new ArrayList<ItemStack>(Arrays.asList(items)), backB);
+        PipeRequestEvent event = new PipeRequestEvent(pipe, new ArrayList<>(Arrays.asList(items)), backB);
         Bukkit.getPluginManager().callEvent(event);
-
-        if (!event.isValid()) return;
 
         Collection<ItemStack> results = event.getItems();
 
@@ -389,7 +386,7 @@ public final class ICUtil {
         Block invHolder = backB.getRelative(offset.getBlockX(), offset.getBlockY(), offset.getBlockZ());
         if (InventoryUtil.doesBlockHaveInventory(invHolder)) {
             InventoryHolder c = (InventoryHolder) invHolder.getState();
-            results = c.getInventory().addItem(results.toArray(new ItemStack[results.size()])).values();
+            results = InventoryUtil.addItemsToInventory(c, results.toArray(new ItemStack[0]));
         }
 
         // Drop whatever results were not added to the chest

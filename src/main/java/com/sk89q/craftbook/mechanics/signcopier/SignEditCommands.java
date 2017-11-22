@@ -30,8 +30,12 @@ public class SignEditCommands {
         if(!SignCopier.signs.containsKey(sender.getName()))
             throw new FastCommandException("You haven't copied a sign!");
 
-        int line = context.getInteger(0, 0);
+        int line = context.getInteger(0, 1);
         String text = context.getString(1, "");
+
+        if (line < 1 || line > 4) {
+            throw new FastCommandException("Line out of bounds. Must be between 1 and 4.");
+        }
 
         String[] signCache = SignCopier.signs.get(sender.getName());
         signCache[line - 1] = text;

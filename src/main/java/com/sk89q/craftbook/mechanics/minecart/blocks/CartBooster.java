@@ -1,12 +1,11 @@
 package com.sk89q.craftbook.mechanics.minecart.blocks;
 
-import org.bukkit.event.EventHandler;
-import org.bukkit.util.Vector;
-
 import com.sk89q.craftbook.mechanics.minecart.events.CartBlockImpactEvent;
 import com.sk89q.craftbook.util.ItemInfo;
 import com.sk89q.craftbook.util.RedstoneUtil.Power;
 import com.sk89q.util.yaml.YAMLProcessor;
+import org.bukkit.event.EventHandler;
+import org.bukkit.util.Vector;
 
 public class CartBooster extends CartBlockMechanism {
 
@@ -19,22 +18,19 @@ public class CartBooster extends CartBlockMechanism {
         // enabled?
         if (Power.OFF == isActive(event.getBlocks())) return;
 
-        double multiplier;
+        Vector newVelocity = event.getVehicle().getVelocity();
 
-        if(event.getBlocks().matches(minecartSpeedModMaxBoostBlock))
-            multiplier = 100;
-        else if(event.getBlocks().matches(minecartSpeedMod25xBoostBlock))
-            multiplier = 1.25;
+        if(event.getBlocks().matches(minecartSpeedModMaxBoostBlock)) {
+            newVelocity.normalize().multiply(event.getMinecart().getMaxSpeed());
+        } else if(event.getBlocks().matches(minecartSpeedMod25xBoostBlock))
+            newVelocity.multiply(1.25d);
         else if(event.getBlocks().matches(minecartSpeedMod20xSlowBlock))
-            multiplier = 0.8;
+            newVelocity.multiply(0.8d);
         else if(event.getBlocks().matches(minecartSpeedMod50xSlowBlock))
-            multiplier = 0.5;
+            newVelocity.multiply(0.5d);
         else
             return;
 
-        // speed up or down
-        Vector newVelocity;
-        newVelocity = event.getVehicle().getVelocity().multiply(multiplier);
         // go
         event.getVehicle().setVelocity(newVelocity);
     }
