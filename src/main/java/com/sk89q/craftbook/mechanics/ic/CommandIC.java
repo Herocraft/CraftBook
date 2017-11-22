@@ -1,5 +1,6 @@
 package com.sk89q.craftbook.mechanics.ic;
 
+import com.sk89q.minecraft.util.commands.CommandException;
 import org.bukkit.command.CommandSender;
 
 import com.sk89q.minecraft.util.commands.CommandContext;
@@ -12,7 +13,7 @@ public interface CommandIC {
      * @param args The {@link CommandContext} for this command. Context 0 is the IC ID.
      * @param sender The {@link CommandSender} of this command.
      */
-    void onICCommand(CommandContext args, CommandSender sender);
+    void onICCommand(CommandContext args, CommandSender sender) throws CommandException;
 
     /**
      * Check the minimum arguments this command requires to be valid.

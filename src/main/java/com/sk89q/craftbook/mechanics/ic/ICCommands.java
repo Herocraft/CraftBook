@@ -46,8 +46,9 @@ public class ICCommands {
             RegisteredICFactory factory = ICManager.inst().registered.get(args.getString(0));
 
             if(factory != null && factory.getFactory() instanceof CommandIC) {
-                if(((CommandIC) factory.getFactory()).getMinCommandArgs()+1 > args.argsLength())
-                    throw new CommandException();
+                int minArgs = ((CommandIC) factory.getFactory()).getMinCommandArgs();
+                if(minArgs+1 > args.argsLength())
+                    throw new CommandException("Not enough arguments! Minimum required: " + minArgs);
                 ((CommandIC) factory.getFactory()).onICCommand(args, sender);
             }
         }

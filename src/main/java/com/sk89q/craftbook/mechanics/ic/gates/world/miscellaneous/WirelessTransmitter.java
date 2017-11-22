@@ -24,6 +24,8 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
 
+import com.sk89q.minecraft.util.commands.CommandException;
+import com.sk89q.minecraft.util.commands.CommandPermissionsException;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
@@ -48,6 +50,7 @@ import com.sk89q.squirrelid.Profile;
 import com.sk89q.squirrelid.resolver.HttpRepositoryService;
 import com.sk89q.squirrelid.resolver.ProfileService;
 import com.sk89q.util.yaml.YAMLProcessor;
+import org.bukkit.entity.Player;
 
 public class WirelessTransmitter extends AbstractIC {
 
@@ -215,7 +218,9 @@ public class WirelessTransmitter extends AbstractIC {
         }
 
         @Override
-        public void onICCommand (CommandContext args, CommandSender sender) {
+        public void onICCommand (CommandContext args, CommandSender sender) throws CommandException {
+            if (sender instanceof Player && !ICMechanic.checkPermissionsBoolean(CraftBookPlugin.inst().wrapPlayer((Player) sender), this, "mc1110.command"))
+                throw new CommandPermissionsException();
 
             if (args.getString(1).equalsIgnoreCase("get")) {
 
