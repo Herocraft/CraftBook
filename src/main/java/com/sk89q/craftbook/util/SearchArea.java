@@ -66,14 +66,16 @@ public final class SearchArea {
 
         if(line.startsWith("r:")) {
 
-            if(CraftBookPlugin.plugins.getWorldGuard() == null)
+            return new SearchArea();
+
+            /*if(CraftBookPlugin.plugins.getWorldGuard() == null)
                 return new SearchArea();
 
             ProtectedRegion reg = CraftBookPlugin.plugins.getWorldGuard().getRegionManager(block.getWorld()).getRegion(StringUtils.replace(line, "r:", ""));
             if(reg == null)
                 return new SearchArea();
 
-            return new SearchArea(reg, block.getWorld());
+            return new SearchArea(reg, block.getWorld());*/
         } else {
 
             String[] locationParts = RegexUtil.EQUALS_PATTERN.split(line);
