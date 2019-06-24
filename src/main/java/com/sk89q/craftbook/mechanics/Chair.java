@@ -15,6 +15,7 @@ import com.sk89q.worldedit.blocks.BlockType;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.ArmorStand;
@@ -25,6 +26,8 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerKickEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.material.Directional;
 
@@ -86,7 +89,7 @@ public class Chair extends AbstractCraftBookMechanic {
             Bukkit.getScheduler().runTask(CraftBookPlugin.inst(), () -> {
                 if (chairLoc != null)
                     player.teleport(chairLoc);
-                far.setPassenger(player);
+                far.addPassenger(player);
             });
         } else if (ar.isEmpty()) {
             removeChair(player);
@@ -109,6 +112,7 @@ public class Chair extends AbstractCraftBookMechanic {
         final ChairData chairData = chairs.get(player.getName());
         final Entity ent = chairData.chairEntity;
         if(ent != null) {
+            ent.eject();
             player.eject();
             ent.remove();
             Bukkit.getScheduler().runTaskLater(CraftBookPlugin.inst(), () -> {
@@ -167,6 +171,20 @@ public class Chair extends AbstractCraftBookMechanic {
         if (hasChair(event.getBlock())) {
             event.setCancelled(true);
             CraftBookPlugin.inst().wrapPlayer(event.getPlayer()).printError("mech.chairs.in-use");
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onDisconnect(PlayerQuitEvent event) {
+        if (hasChair(event.getPlayer())) {
+            removeChair(event.getPlayer());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onKick(PlayerKickEvent event) {
+        if (hasChair(event.getPlayer())) {
+            removeChair(event.getPlayer());
         }
     }
 
@@ -258,10 +276,14 @@ public class Chair extends AbstractCraftBookMechanic {
         public void run() {
             for (Map.Entry<String, ChairData> pl : chairs.entrySet()) {
                 Player p = Bukkit.getPlayerExact(pl.getKey());
-                if (p == null  || p.isDead()) {
+                if (p == null  || p.isDead() || !p.isValid()) {
                     ChairData data = chairs.remove(pl.getKey());
-                    if (data != null && data.chairEntity != null)
-                        data.chairEntity.remove();
+                    if (data != null && data.chairEntity != null) {
+                        Bukkit.getScheduler().runTaskLater(CraftBookPlugin.inst(), () -> {
+                            data.chairEntity.eject();
+                            data.chairEntity.remove();
+                        }, 5);
+                    }
                     continue;
                 }
 
@@ -270,8 +292,8 @@ public class Chair extends AbstractCraftBookMechanic {
                 else {
                     addChair(p, pl.getValue().location, null); // For any new players.
 
-                    if (chairHealth && p.getHealth() < p.getMaxHealth())
-                        p.setHealth(Math.min(p.getHealth() + chairHealAmount, p.getMaxHealth()));
+                    if (chairHealth && p.getHealth() < p.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue())
+                        p.setHealth(Math.min(p.getHealth() + chairHealAmount, p.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue()));
                     if (p.getExhaustion() > -20d) p.setExhaustion((float)(p.getExhaustion() - 0.1d));
                 }
             }

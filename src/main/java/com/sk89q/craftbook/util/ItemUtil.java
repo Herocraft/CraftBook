@@ -9,6 +9,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.*;
+import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.material.MaterialData;
@@ -24,7 +25,7 @@ public final class ItemUtil {
 
     /**
      * Add an itemstack to an existing itemstack.
-     *
+     * 
      * @param base The itemstack to be added to.
      * @param toAdd The itemstack to add to the base.
      * @return The unaddable items.
@@ -46,7 +47,7 @@ public final class ItemUtil {
 
     /**
      * Filter a list of items by inclusions and exclusions.
-     *
+     * 
      * @param stacks The base list of items.
      * @param inclusions The list of items to include, skipped if empty.
      * @param exclusions The list of items to exclude, skipped if empty.
@@ -67,7 +68,7 @@ public final class ItemUtil {
 
     /**
      * Check whether or not an item passes filters.
-     *
+     * 
      * @param stack The item to check if it passes.
      * @param inclusions The list of items to include, skipped if empty.
      * @param exclusions The list of items to exclude, skipped if empty.
@@ -264,21 +265,21 @@ public final class ItemUtil {
             //Lore
             List<String> lore1 = new ArrayList<>();
             if(meta.hasLore())
-                for (String lore : meta.getLore())
+                for(String lore : meta.getLore())
                     lore1.add(ChatColor.translateAlternateColorCodes('&', stripResetChar(lore.trim())));
 
             List<String> lore2 = new ArrayList<>();
             if(meta2.hasLore())
-                for (String lore : meta2.getLore())
+                for(String lore : meta2.getLore())
                     lore2.add(ChatColor.translateAlternateColorCodes('&', stripResetChar(lore.trim())));
 
             if(lore1.size() != lore2.size())
-                return false;
+            return false;
             CraftBookPlugin.logDebugMessage("Has same lore lengths", "item-checks.meta.lores");
 
-            for (int i = 0; i < lore1.size(); i++) {
-                if (lore1.get(i).contains("$IGNORE") || lore2.get(i).contains("$IGNORE")) continue; //Ignore this line.
-                if (!lore1.get(i).equals(lore2.get(i)))
+            for(int i = 0; i < lore1.size(); i++) {
+                if(lore1.get(i).contains("$IGNORE") || lore2.get(i).contains("$IGNORE")) continue; //Ignore this line.
+                if(!lore1.get(i).equals(lore2.get(i)))
                     return false;
             }
 
@@ -295,49 +296,77 @@ public final class ItemUtil {
             if(meta2.hasEnchants())
                 ench2.addAll(meta2.getEnchants().keySet());
 
-            if (ench1.size() != ench2.size())
+            if(ench1.size() != ench2.size())
                 return false;
             CraftBookPlugin.logDebugMessage("Has same enchantment lengths", "item-checks.meta.enchants");
 
-            for (Enchantment ench : ench1) {
-                if (!ench2.contains(ench))
+            for(Enchantment ench : ench1) {
+                if(!ench2.contains(ench))
                     return false;
-                if (meta.getEnchantLevel(ench) != meta2.getEnchantLevel(ench))
+                if(meta.getEnchantLevel(ench) != meta2.getEnchantLevel(ench))
                     return false;
             }
 
             CraftBookPlugin.logDebugMessage("Enchants are the same", "item-checks.meta.enchants");
+
+            //StoredEnchants
+            if (meta instanceof EnchantmentStorageMeta) {
+                if (!(meta2 instanceof EnchantmentStorageMeta))
+                    return false; // meta type mismatch
+
+                EnchantmentStorageMeta storageMeta = (EnchantmentStorageMeta) meta;
+                List<Enchantment> storedEnchantments = new ArrayList<>();
+                if (storageMeta.hasStoredEnchants())
+                    storedEnchantments.addAll(storageMeta.getStoredEnchants().keySet());
+
+                EnchantmentStorageMeta storageMeta2 = (EnchantmentStorageMeta) meta2;
+                List<Enchantment> storedEnchantments2 = new ArrayList<>();
+                if (storageMeta2.hasStoredEnchants())
+                    storedEnchantments2.addAll(storageMeta2.getStoredEnchants().keySet());
+
+                if (storedEnchantments.size() != storedEnchantments2.size())
+                    return false; // mismatch enchantment counts
+                CraftBookPlugin.logDebugMessage("Has same stored enchantment lengths", "item-checks.meta.enchants");
+
+                for (Enchantment ench : storedEnchantments) {
+                    if (!storedEnchantments2.contains(ench))
+                        return false; // mismatch stored enchantments
+                    if (storageMeta.getStoredEnchantLevel(ench) != storageMeta2.getStoredEnchantLevel(ench))
+                        return false; // mismatch stored enchantment levels
+                }
+
+                CraftBookPlugin.logDebugMessage("Stored enchants are the same", "item-checks.meta.enchants");
+            } else if (meta2 instanceof EnchantmentStorageMeta)
+                return false; // meta type mismatch
         }
 
-        //StoredEnchants
-        if (meta instanceof EnchantmentStorageMeta) {
-            if (!(meta2 instanceof EnchantmentStorageMeta))
-                return false; // meta type mismatch
+        if (meta instanceof BookMeta) {
+            if (!(meta2 instanceof BookMeta))
+                return false;
 
-            EnchantmentStorageMeta storageMeta = (EnchantmentStorageMeta) meta;
-            List<Enchantment> storedEnchantments = new ArrayList<>();
-            if (storageMeta.hasStoredEnchants())
-                storedEnchantments.addAll(storageMeta.getStoredEnchants().keySet());
+            BookMeta bookMeta = (BookMeta) meta;
+            BookMeta bookMeta2 = (BookMeta) meta2;
 
-            EnchantmentStorageMeta storageMeta2 = (EnchantmentStorageMeta) meta2;
-            List<Enchantment> storedEnchantments2 = new ArrayList<>();
-            if (storageMeta2.hasStoredEnchants())
-                storedEnchantments2.addAll(storageMeta2.getStoredEnchants().keySet());
-
-            if (storedEnchantments.size() != storedEnchantments2.size())
-                return false; // mismatch enchantment counts
-            CraftBookPlugin.logDebugMessage("Has same stored enchantment lengths", "item-checks.meta.enchants");
-
-            for (Enchantment ench : storedEnchantments) {
-                if (!storedEnchantments2.contains(ench))
-                    return false; // mismatch stored enchantments
-                if (storageMeta.getStoredEnchantLevel(ench) != storageMeta2.getStoredEnchantLevel(ench))
-                    return false; // mismatch stored enchantment levels
+            if (bookMeta.hasAuthor() != bookMeta2.hasAuthor())
+                return false;
+            if (bookMeta.hasAuthor() && !bookMeta.getAuthor().equals(bookMeta2.getAuthor()))
+                return false;
+            if (bookMeta.hasTitle() != bookMeta2.hasTitle())
+                return false;
+            if (bookMeta.hasTitle() && !bookMeta.getTitle().equals(bookMeta2.getTitle()))
+                return false;
+            if (bookMeta.hasPages() != bookMeta2.hasPages())
+                return false;
+            if (bookMeta.hasPages()) {
+                if (bookMeta.getPageCount() != bookMeta2.getPageCount())
+                    return false;
+                for (int i = 1; i <= bookMeta.getPageCount(); i++) {
+                    if (!bookMeta.getPage(i).equals(bookMeta2.getPage(i)))
+                        return false;
+                }
             }
-
-            CraftBookPlugin.logDebugMessage("Stored enchants are the same", "item-checks.meta.enchants");
-        } else if (meta2 instanceof EnchantmentStorageMeta)
-            return false; // meta type mismatch
+        } else if (meta2 instanceof BookMeta)
+            return false;
 
         return true;
     }
@@ -349,7 +378,7 @@ public final class ItemUtil {
     public static boolean areItemsIdentical(ItemStack item, ItemStack item2, boolean namelessWildcard, boolean checkLore, boolean checkEnchants) {
 
         if(!isStackValid(item) || !isStackValid(item2)) {
-            CraftBookPlugin.logDebugMessage("An invalid item was compared. Was first? " + isStackValid(item), "item-checks");
+            CraftBookPlugin.logDebugMessage("An invalid item was compared. Was first? " + !isStackValid(item), "item-checks");
             return !isStackValid(item) && !isStackValid(item2);
         }
         else {
@@ -377,9 +406,9 @@ public final class ItemUtil {
 
             if(!mixedMeta) {
                 CraftBookPlugin.logDebugMessage("Both share the existance of metadata", "item-checks");
-                if (item.hasItemMeta()) {
+                if(item.hasItemMeta()) {
                     CraftBookPlugin.logDebugMessage("Both have metadata", "item-checks.meta");
-                    if (!areItemMetaIdentical(item.getItemMeta(), item2.getItemMeta(), namelessWildcard, checkLore, checkEnchants)) {
+                    if(!areItemMetaIdentical(item.getItemMeta(), item2.getItemMeta(), namelessWildcard, checkLore, checkEnchants)) {
                         CraftBookPlugin.logDebugMessage("Metadata is different", "item-checks.meta");
                         return false;
                     }
@@ -417,9 +446,17 @@ public final class ItemUtil {
         return true;
     }
 
+    public static boolean hasDisplayNameOrLore(ItemStack item) {
+        if(item.hasItemMeta()) {
+            ItemMeta meta = item.getItemMeta();
+            return meta.hasDisplayName() || meta.hasLore();
+        }
+        return false;
+    }
+
     /**
      * Removes a specified amount from an item entity.
-     *
+     * 
      * @param item
      * @return true if success, otherwise false.
      */
@@ -589,7 +626,7 @@ public final class ItemUtil {
 
     /**
      * Checks whether the item is usable as a fuel in a furnace.
-     *
+     * 
      * @param item The item to check.
      * @return Whether it is usable in a furnace.
      */
@@ -669,7 +706,7 @@ public final class ItemUtil {
 
     /**
      * Checks whether an item is a potion ingredient.
-     *
+     * 
      * @param item The item to check.
      * @return If the item is a potion ingredient.
      */
@@ -818,7 +855,7 @@ public final class ItemUtil {
 
     /**
      * Gets all {@link Item}s at a certain {@link Block}.
-     *
+     * 
      * @param block The {@link Block} to check for items at.
      * @return A {@link ArrayList} of {@link Item}s.
      */

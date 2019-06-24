@@ -294,12 +294,14 @@ public class CommandItems extends AbstractCraftBookMechanic {
     }
 
     @EventHandler(priority=EventPriority.HIGH)
-    public void onItemPickup(final PlayerPickupItemEvent event) {
+    public void onItemPickup(final EntityPickupItemEvent event) {
 
-        if(event.getItem() == null)
+        if (event.getItem() == null)
             return;
 
-        performCommandItems(event.getItem().getItemStack(), event.getPlayer(), event);
+        if (event.getEntity() instanceof Player) {
+            performCommandItems(event.getItem().getItemStack(), (Player) event.getEntity(), event);
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -408,8 +410,10 @@ public class CommandItems extends AbstractCraftBookMechanic {
                             }
                         }
 
-                        if (!found && !def.missingConsumableMessage.isEmpty()) {
-                            lplayer.printError(lplayer.translate(def.missingConsumableMessage).replace("%item%", stack.getAmount() + " " + stack.getType().name()));
+                        if (!found) {
+                            if (!def.missingConsumableMessage.isEmpty()) {
+                                lplayer.printError(lplayer.translate(def.missingConsumableMessage).replace("%item%", stack.getAmount() + " " + stack.getType().name()));
+                            }
                             break current;
                         }
                     }
@@ -502,15 +506,23 @@ public class CommandItems extends AbstractCraftBookMechanic {
 
         if(comdef.type == CommandType.CONSOLE)
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
-        else if (comdef.type == CommandType.PLAYER)
-            Bukkit.dispatchCommand(player, command);
-        else  if (comdef.type == CommandType.SUPERUSER) {
+        else if (comdef.type == CommandType.PLAYER) {
+            if (comdef.fakeCommand) {
+                ProtectionUtil.canSendCommand(player, command);
+            } else {
+                Bukkit.dispatchCommand(player, command);
+            }
+        } else if (comdef.type == CommandType.SUPERUSER) {
             PermissionAttachment att = player.addAttachment(CraftBookPlugin.inst());
             att.setPermission("*", true);
             boolean wasOp = player.isOp();
             if(!wasOp)
                 player.setOp(true);
-            Bukkit.dispatchCommand(player, command);
+            if (comdef.fakeCommand) {
+                ProtectionUtil.canSendCommand(player, command);
+            } else {
+                Bukkit.dispatchCommand(player, command);
+            }
             att.remove();
             if(!wasOp)
                 player.setOp(wasOp);
@@ -558,6 +570,8 @@ public class CommandItems extends AbstractCraftBookMechanic {
             command = StringUtils.replace(command, "@b.z", String.valueOf(((BlockEvent) event).getBlock().getZ()));
             command = StringUtils.replace(command, "@b.w", ((BlockEvent) event).getBlock().getLocation().getWorld().getName());
             command = StringUtils.replace(command, "@b.l", ((BlockEvent) event).getBlock().getLocation().toString());
+            command = StringUtils.replace(command, "@b.d", String.valueOf(((BlockEvent) event).getBlock().getData()));
+            command = StringUtils.replace(command, "@b.t", ((BlockEvent) event).getBlock().getType().name());
             command = StringUtils.replace(command, "@b", ((BlockEvent) event).getBlock().getType().name() + (((BlockEvent) event).getBlock().getData() == 0 ? "" : ":") + ((BlockEvent) event).getBlock().getData());
         }
         if(event instanceof PlayerInteractEvent && ((PlayerInteractEvent) event).getClickedBlock() != null) {
@@ -566,6 +580,8 @@ public class CommandItems extends AbstractCraftBookMechanic {
             command = StringUtils.replace(command, "@b.z", String.valueOf(((PlayerInteractEvent) event).getClickedBlock().getZ()));
             command = StringUtils.replace(command, "@b.w", String.valueOf(((PlayerInteractEvent) event).getClickedBlock().getWorld().getName()));
             command = StringUtils.replace(command, "@b.l", ((PlayerInteractEvent) event).getClickedBlock().getLocation().toString());
+            command = StringUtils.replace(command, "@b.d", String.valueOf(((PlayerInteractEvent) event).getClickedBlock().getData()));
+            command = StringUtils.replace(command, "@b.t", ((PlayerInteractEvent) event).getClickedBlock().getType().name());
             command = StringUtils.replace(command, "@b", ((PlayerInteractEvent) event).getClickedBlock().getType().name() + (((PlayerInteractEvent) event).getClickedBlock().getData() == 0 ? "" : ":") + ((PlayerInteractEvent) event).getClickedBlock().getData());
         }
         if(event instanceof EntityEvent && ((EntityEvent) event).getEntityType() != null && command.contains("@e")) {

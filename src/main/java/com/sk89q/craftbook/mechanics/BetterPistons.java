@@ -1,5 +1,6 @@
 package com.sk89q.craftbook.mechanics;
 
+import com.google.common.collect.Lists;
 import com.sk89q.craftbook.AbstractCraftBookMechanic;
 import com.sk89q.craftbook.ChangedSign;
 import com.sk89q.craftbook.LocalPlayer;
@@ -29,7 +30,6 @@ public class BetterPistons extends AbstractCraftBookMechanic {
 
     @Override
     public boolean enable() {
-
         instance = this;
         return true;
     }
@@ -40,24 +40,28 @@ public class BetterPistons extends AbstractCraftBookMechanic {
      * @param sign The sign to check
      * @return the type of piston created
      */
-    public static Types checkSign(Block sign) {
-
+    private static Types checkSign(Block sign) {
         Types type = null;
 
         if (SignUtil.isSign(sign)) {
-
             ChangedSign s = BukkitUtil.toChangedSign(sign);
-            if (s.getLine(1).equals("[Crush]") && Types.isEnabled(Types.CRUSH))
-                type = Types.CRUSH;
-            else if (s.getLine(1).equals("[SuperSticky]") && Types.isEnabled(Types.SUPERSTICKY))
-                type = Types.SUPERSTICKY;
-            else if (s.getLine(1).equals("[Bounce]") && Types.isEnabled(Types.BOUNCE))
-                type = Types.BOUNCE;
-            else if (s.getLine(1).equals("[SuperPush]") && Types.isEnabled(Types.SUPERPUSH))
-                type = Types.SUPERPUSH;
+            switch (s.getLine(1)) {
+                case "[Crush]":
+                    type = Types.CRUSH;
+                    break;
+                case "[SuperSticky]":
+                    type = Types.SUPERSTICKY;
+                    break;
+                case "[Bounce]":
+                    type = Types.BOUNCE;
+                    break;
+                case "[SuperPush]":
+                    type = Types.SUPERPUSH;
+                    break;
+            }
         }
 
-        return type;
+        return type != null && Types.isEnabled(type) ? type : null;
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -101,6 +105,39 @@ public class BetterPistons extends AbstractCraftBookMechanic {
                 return;
             }
 
+            if(ProtectionUtil.shouldUseProtection()) {
+                if (type == Types.BOUNCE || type == Types.CRUSH) {
+                    PistonBaseMaterial pis = (PistonBaseMaterial) block.getState().getData();
+                    Block off = block.getRelative(pis.getFacing());
+                    if (!ProtectionUtil.canBuild(event.getPlayer(), off, false)) {
+                        if (CraftBookPlugin.inst().getConfiguration().showPermissionMessages)
+                            player.printError("area.use-permission");
+                        SignUtil.cancelSign(event);
+                        return;
+                    }
+                } else if (type == Types.SUPERPUSH || type == Types.SUPERSTICKY) {
+                    PistonBaseMaterial pis = (PistonBaseMaterial) block.getState().getData();
+
+                    int distance = 10;
+                    try {
+                        distance = Integer.parseInt(RegexUtil.MINUS_PATTERN.split(event.getLine(2))[0]);
+                    } catch (Exception ignored) {
+                    }
+
+                    distance = Math.min(pistonMaxDistance, distance);
+                    Block off = block;
+                    for (int i = 0; i < distance; i++) {
+                        off = off.getRelative(pis.getFacing());
+                        if (!ProtectionUtil.canBuild(event.getPlayer(), off, false)) {
+                            if (CraftBookPlugin.inst().getConfiguration().showPermissionMessages)
+                                player.printError("area.use-permission");
+                            SignUtil.cancelSign(event);
+                            return;
+                        }
+                    }
+                }
+            }
+
             player.print("mech.pistons." + type.name().toLowerCase(Locale.ENGLISH) + ".created");
         }
     }
@@ -129,12 +166,12 @@ public class BetterPistons extends AbstractCraftBookMechanic {
             if(face != BlockFace.UP && face != BlockFace.DOWN && !SignUtil.getBackBlock(sign).getLocation().equals(event.getBlock().getLocation()))
                 continue;
             type = checkSign(sign);
-            if(type != null && !types.contains(new Tuple2<>(type, sign)))
+            if(type != null)
                 types.add(new Tuple2<>(type, sign));
             if (type != null && SignUtil.isSign(sign.getRelative(face)) && SignUtil.getFacing(sign.getRelative(face)) == SignUtil.getFacing(sign)) {
                 sign = sign.getRelative(face);
                 type = checkSign(sign);
-                if(type != null && !types.contains(new Tuple2<>(type, sign)))
+                if(type != null)
                     types.add(new Tuple2<>(type, sign));
             }
         }
@@ -229,9 +266,9 @@ public class BetterPistons extends AbstractCraftBookMechanic {
             } catch (Exception ignored) {
             }
 
-            final boolean air = signState.getLine(3).equalsIgnoreCase("AIR");
-
             block = Math.min(pistonMaxDistance, block);
+
+            final boolean air = signState.getLine(3).equalsIgnoreCase("AIR");
 
             final int fblock = block;
 
@@ -249,22 +286,19 @@ public class BetterPistons extends AbstractCraftBookMechanic {
                             break;
                         }
                         for (Entity ent : trigger.getRelative(piston.getFacing(), i).getChunk().getEntities()) {
-
                             if (EntityUtil.isEntityInBlock(ent, trigger.getRelative(piston.getFacing(), i))) {
                                 ent.teleport(ent.getLocation().subtract(piston.getFacing().getModX() * movemod, piston.getFacing().getModY() * movemod, piston.getFacing().getModZ() * movemod));
                             }
                         }
                         copyData(trigger.getRelative(piston.getFacing(), i + 1), trigger.getRelative(piston.getFacing(), i));
                     }
-                }, 2L * (p + 1));
+                }, 3L * (p + 1));
             }
         }
     }
 
     public void superPush(final Block trigger, final PistonBaseMaterial piston, ChangedSign signState) {
-
-        if (trigger.getRelative(piston.getFacing()).getType() != Material.PISTON_EXTENSION && trigger.getRelative(piston.getFacing()).getType() !=Material.PISTON_MOVING_PIECE) {
-
+        if (trigger.getRelative(piston.getFacing()).getType() != Material.PISTON_EXTENSION && trigger.getRelative(piston.getFacing()).getType() != Material.PISTON_MOVING_PIECE) {
             int block = 10;
             int amount = 1;
             try {
@@ -282,20 +316,21 @@ public class BetterPistons extends AbstractCraftBookMechanic {
             for (int p = 0; p < amount; p++) {
                 Bukkit.getScheduler().runTaskLater(CraftBookPlugin.inst(), () -> {
                     for (int x = fblock + 2; x >= 1; x--) {
-                        if (trigger.equals(trigger.getRelative(piston.getFacing(), x)) || trigger.getRelative(piston.getFacing(), x).getType() == Material.PISTON_MOVING_PIECE || trigger.getRelative(piston.getFacing(), x).getType() == Material.PISTON_EXTENSION || !canPistonPushBlock(trigger.getRelative(piston.getFacing(), x)))
+                        Block offset = trigger.getRelative(piston.getFacing(), x);
+                        Block next = trigger.getRelative(piston.getFacing(), x + 1);
+                        if (trigger.equals(offset) || offset.getType() == Material.PISTON_MOVING_PIECE || offset.getType() == Material.PISTON_EXTENSION || !canPistonPushBlock(offset))
                             continue;
-                        if (trigger.getRelative(piston.getFacing(), x + 1).getType() == Material.AIR) {
-                            for (Entity ent : trigger.getRelative(piston.getFacing(), x + 1).getChunk().getEntities()) {
-
-                                if (EntityUtil.isEntityInBlock(ent, trigger.getRelative(piston.getFacing(), x + 1))) {
+                        if (next.getType() == Material.AIR) {
+                            for (Entity ent : next.getChunk().getEntities()) {
+                                if (EntityUtil.isEntityInBlock(ent, offset)) {
                                     ent.teleport(ent.getLocation().add(piston.getFacing().getModX() * movemod, piston.getFacing().getModY() * movemod, piston.getFacing().getModZ() * movemod));
                                 }
                             }
-                            if(copyData(trigger.getRelative(piston.getFacing(), x), trigger.getRelative(piston.getFacing(), x + 1)))
-                                trigger.getRelative(piston.getFacing(), x).setType(Material.AIR);
+                            if(copyData(offset, next))
+                                offset.setType(Material.AIR);
                         }
                     }
-                }, 2L * (p + 1));
+                }, 3L * (p + 1));
             }
         }
     }
@@ -311,7 +346,9 @@ public class BetterPistons extends AbstractCraftBookMechanic {
         BlockState toState = to.getState();
         BlockState fromState = from.getState();
 
-        if (fromState instanceof DoubleChest || toState instanceof DoubleChest) return false;
+        if (fromState instanceof DoubleChest || toState instanceof DoubleChest) {
+            return false;
+        }
 
         int type = from.getTypeId();
         byte data = from.getData();
@@ -321,7 +358,7 @@ public class BetterPistons extends AbstractCraftBookMechanic {
             oldInventory = ((InventoryHolder) fromState).getInventory().getContents().clone();
             ((InventoryHolder) fromState).getInventory().clear();
             //fromState.update();
-            from.setTypeId(0);
+            from.setType(Material.AIR);
         }
         to.setTypeIdAndData(type, data, true);
         if (to.getType() == Material.STONE_BUTTON || to.getType() == Material.WOOD_BUTTON) {
@@ -343,15 +380,13 @@ public class BetterPistons extends AbstractCraftBookMechanic {
         return true;
     }
 
-    public boolean canPistonPushBlock(Block block) {
-
+    private boolean canPistonPushBlock(Block block) {
         if (block.getState() instanceof DoubleChest) return false;
 
         if(pistonsMovementBlacklist.contains(new ItemInfo(block)))
             return false;
 
         switch (block.getType()) {
-
             case PISTON_MOVING_PIECE:
                 return false;
             default:
@@ -364,7 +399,6 @@ public class BetterPistons extends AbstractCraftBookMechanic {
         CRUSH, SUPERSTICKY, BOUNCE, SUPERPUSH;
 
         public static boolean isEnabled(Types type) {
-
             switch (type) {
                 case CRUSH:
                     return instance.pistonsCrusher;
@@ -391,6 +425,17 @@ public class BetterPistons extends AbstractCraftBookMechanic {
     private List<ItemInfo> pistonsBounceBlacklist;
     private double pistonBounceMaxVelocity;
 
+    public List<String> getDefaultBlacklist() {
+        return Lists.newArrayList(
+                "OBSIDIAN",
+                "BEDROCK",
+                "PORTAL",
+                "ENDER_PORTAL_FRAME",
+                "ENDER_PORTAL",
+                "END_GATEWAY"
+        );
+    }
+
     @Override
     public void loadConfiguration (YAMLProcessor config, String path) {
 
@@ -401,7 +446,7 @@ public class BetterPistons extends AbstractCraftBookMechanic {
         pistonsCrusherInstaKill = config.getBoolean(path + "crushers-kill-mobs", false);
 
         config.setComment(path + "crusher-blacklist", "A list of blocks that the Crusher piston can not break.");
-        pistonsCrusherBlacklist = ItemInfo.parseListFromString(config.getStringList(path + "crusher-blacklist", Arrays.asList("OBSIDIAN", "BEDROCK")));
+        pistonsCrusherBlacklist = ItemInfo.parseListFromString(config.getStringList(path + "crusher-blacklist", getDefaultBlacklist()));
 
         config.setComment(path + "super-sticky", "Enables BetterPistons SuperSticky Mechanic.");
         pistonsSuperSticky = config.getBoolean(path + "super-sticky", true);
@@ -410,13 +455,13 @@ public class BetterPistons extends AbstractCraftBookMechanic {
         pistonsSuperPush = config.getBoolean(path + "super-push", true);
 
         config.setComment(path + "movement-blacklist", "A list of blocks that the movement related BetterPistons can not interact with.");
-        pistonsMovementBlacklist = ItemInfo.parseListFromString(config.getStringList(path + "movement-blacklist", Arrays.asList("OBSIDIAN", "BEDROCK")));
+        pistonsMovementBlacklist = ItemInfo.parseListFromString(config.getStringList(path + "movement-blacklist", getDefaultBlacklist()));
 
         config.setComment(path + "bounce", "Enables BetterPistons Bounce Mechanic.");
         pistonsBounce = config.getBoolean(path + "bounce", true);
 
         config.setComment(path + "bounce-blacklist", "A list of blocks that the Bounce piston can not bounce.");
-        pistonsBounceBlacklist = ItemInfo.parseListFromString(config.getStringList(path + "bounce-blacklist", Arrays.asList("OBSIDIAN", "BEDROCK")));
+        pistonsBounceBlacklist = ItemInfo.parseListFromString(config.getStringList(path + "bounce-blacklist", getDefaultBlacklist()));
 
         config.setComment(path + "max-distance", "The maximum distance a BetterPiston can interact with blocks from.");
         pistonMaxDistance = config.getInt(path + "max-distance", 12);
